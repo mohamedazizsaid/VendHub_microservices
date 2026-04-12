@@ -26,6 +26,7 @@ export interface UserRegistrationDto {
     lastName: string;
     password?: string;
     phone?: string;
+    statut?: "ACTIVE" | "INACTIVE";
     recaptchaToken?: string;
 }
 
@@ -33,18 +34,30 @@ export interface UserUpdateDto {
     firstName?: string;
     lastName?: string;
     email?: string;
+    phone?: string;
 }
 
 export interface User {
     id: number;
     username: string;
     email: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
     idKeycloak: string;
-    phone: string;
+    phone?: string;
     imageUrl?: string;
-    roles: string[];
+    roles?: string[];
+    role?: string;
+    statut?: "ACTIVE" | "INACTIVE";
+    createdAt?: string;
+}
+
+export interface PaginatedUsersResponse {
+    content: User[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
 }
 
 
@@ -52,13 +65,31 @@ export interface RoleAssignmentRequest {
     roleName: string;
 }
 
-export const getUserFromToken = () => {
-    // Priority 1: FaceID override (stashed during loginByFaceId)
-    const faceIdUser = localStorage.getItem('faceIdUser');
-    if (faceIdUser) return JSON.parse(faceIdUser);
+export interface ForgotPasswordRequest {
+    email: string;
+}
 
-    const token = localStorage.getItem('token');
+export interface ResetPasswordWithCodeRequest {
+    email: string;
+    code: string;
+    newPassword: string;
+}
+
+export const getUserFromToken = () => {
+    const rawToken = localStorage.getItem('token');
+    const token = rawToken && rawToken !== 'undefined' && rawToken !== 'null' ? rawToken : null;
     if (!token) return null;
+
+    // FaceID metadata can enrich UI but should never authenticate without a real token
+    const faceIdUser = localStorage.getItem('faceIdUser');
+    if (faceIdUser) {
+        try {
+            return JSON.parse(faceIdUser);
+        } catch {
+            localStorage.removeItem('faceIdUser');
+        }
+    }
+
     try {
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -79,6 +110,7 @@ export const authService = {
         const response = await apiClient('/api/auth/login', {
             method: 'POST',
             body: JSON.stringify(request),
+            suppressNoTokenWarning: true,
         });
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('refreshToken', response.refresh_token);
@@ -100,10 +132,37 @@ export const authService = {
         const response = await apiClient('/api/auth/social-login', {
             method: 'POST',
             body: JSON.stringify({ code, redirectUri }),
+            suppressNoTokenWarning: true,
+            skipAuthRedirect: true,
         });
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('refreshToken', response.refresh_token);
+
+        if (response.userId) {
+            localStorage.setItem('faceIdUser', JSON.stringify({
+                sub: response.userId,
+                preferred_username: response.username,
+                name: response.username,
+                roles: response.role ? [response.role] : []
+            }));
+        }
         return response;
+    },
+
+    requestPasswordReset: async (email: string): Promise<string> => {
+        return apiClient('/api/auth/forgot-password/request', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+            suppressNoTokenWarning: true,
+        });
+    },
+
+    resetPasswordWithCode: async (payload: ResetPasswordWithCodeRequest): Promise<string> => {
+        return apiClient('/api/auth/forgot-password/reset', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            suppressNoTokenWarning: true,
+        });
     },
 
     logout: async (refreshToken: string): Promise<void> => {
@@ -129,6 +188,7 @@ export const authService = {
         return apiClient('/api/auth/register', {
             method: 'POST',
             body: JSON.stringify(dto),
+            suppressNoTokenWarning: true,
         });
     },
 
@@ -164,15 +224,42 @@ export const authService = {
         });
     },
 
-    get2FAStatus: async (userId: string): Promise<{ enabled: boolean }> => {
+    get2FAStatus: async (userId: string, options?: { skipAuthRedirect?: boolean }): Promise<{ enabled: boolean }> => {
         return apiClient(`/api/auth/users/${userId}/2fa/status`, {
+            method: 'GET',
+            skipAuthRedirect: options?.skipAuthRedirect ?? false,
+        });
+    },
+
+    getUser: async (userId: string, options?: { skipAuthRedirect?: boolean; omitAuthHeader?: boolean }): Promise<User> => {
+        return apiClient(`/api/auth/users/${userId}`, {
+            method: 'GET',
+            skipAuthRedirect: options?.skipAuthRedirect ?? false,
+            omitAuthHeader: options?.omitAuthHeader ?? false,
+        });
+    },
+
+    getUsers: async (params?: {
+        page?: number;
+        size?: number;
+        search?: string;
+        role?: string;
+        status?: string;
+    }): Promise<PaginatedUsersResponse> => {
+        const page = params?.page ?? 0;
+        const size = params?.size ?? 10;
+        const search = encodeURIComponent(params?.search ?? '');
+        const role = encodeURIComponent(params?.role ?? 'ALL');
+        const status = encodeURIComponent(params?.status ?? 'ALL');
+
+        return apiClient(`/api/auth/users?page=${page}&size=${size}&search=${search}&role=${role}&status=${status}`, {
             method: 'GET',
         });
     },
 
-    getUser: async (userId: string): Promise<User> => {
-        return apiClient(`/api/auth/users/${userId}`, {
-            method: 'GET',
+    updateUserStatus: async (userId: string, status: 'ACTIVE' | 'INACTIVE'): Promise<string> => {
+        return apiClient(`/api/auth/users/${userId}/status?status=${status}`, {
+            method: 'PATCH',
         });
     },
 
@@ -190,6 +277,7 @@ export const authService = {
     getUserByUsername: async (username: string): Promise<User> => {
         return apiClient(`/api/auth/users/username/${username}`, {
             method: 'GET',
+            suppressNoTokenWarning: true,
         });
     },
 
@@ -197,6 +285,7 @@ export const authService = {
         const response = await apiClient('/api/auth/login-faceid', {
             method: 'POST',
             body: JSON.stringify({ username }),
+            suppressNoTokenWarning: true,
         });
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('refreshToken', response.refresh_token);

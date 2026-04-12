@@ -3,13 +3,14 @@ import { Package, Calendar, ShoppingBag, Heart, Bell, Settings as SettingsIcon, 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
-import { mockOrders, mockEvents } from "../../data/mockData";
+import { mockEvents } from "../../data/mockData";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { authService, getUserFromToken } from "../../api/auth.service";
 import { recommendationService, InteractionStats } from "../../api/recommendation.service";
 import { Product, productService } from "../../api/product.service";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog";
+import { Commande, orderService } from "../../api/order.service";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/Dialog";
 import { Switch } from "../../components/ui/switch";
 import { toast } from "sonner";
 
@@ -23,10 +24,10 @@ export function UserDashboard() {
   const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [recentOrders, setRecentOrders] = useState<Commande[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const user = getUserFromToken();
 
-  const recentOrders = mockOrders.slice(0, 3);
   const upcomingEvents = mockEvents.slice(0, 2);
 
   useEffect(() => {
@@ -47,12 +48,16 @@ export function UserDashboard() {
         .then(setRecommendations)
         .catch(() => {})
         .finally(() => setLoadingRecommendations(false));
+
+      orderService.getCommandesByClientId(user.sub)
+        .then((orders) => setRecentOrders(orders.slice(0, 3)))
+        .catch(() => setRecentOrders([]));
     }
   }, [user?.sub]);
 
   const fetchProfile = async () => {
     try {
-      const data = await authService.getUser(user.sub);
+      const data = await authService.getUser(user.sub, { skipAuthRedirect: true, omitAuthHeader: true });
       setProfile(data);
     } catch (error) {
       console.error("Failed to fetch profile", error);
@@ -61,7 +66,7 @@ export function UserDashboard() {
 
   const check2FAStatus = async () => {
     try {
-      const response = await authService.get2FAStatus(user.sub);
+      const response = await authService.get2FAStatus(user.sub, { skipAuthRedirect: true });
       setIs2FAEnabled(response.enabled);
     } catch (error) {
       console.error("Failed to fetch 2FA status", error);
@@ -121,7 +126,7 @@ export function UserDashboard() {
   };
 
   const stats = [
-    { label: "Total Orders", value: "12", icon: ShoppingBag, color: "from-blue-500 to-blue-600" },
+    { label: "Total Orders", value: recentOrders.length.toString(), icon: ShoppingBag, color: "from-blue-500 to-blue-600" },
     { label: "Active Events", value: "3", icon: Calendar, color: "from-purple-500 to-purple-600" },
     { label: "Products Viewed", value: interactionStats?.CLICK?.toString() || "0", icon: Package, color: "from-cyan-500 to-cyan-600" },
     { label: "Wishlist Items", value: favoritesCount.toString(), icon: Heart, color: "from-pink-500 to-pink-600" },
@@ -185,12 +190,12 @@ export function UserDashboard() {
                             <Package className="w-6 h-6 text-white" />
                           </div>
                           <div>
-                            <p className="text-gray-900 dark:text-white">{order.id}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{order.items} items • {formatDate(order.date)}</p>
+                            <p className="text-gray-900 dark:text-white">Order #{order.id}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{order.lignesCommande?.length || 0} items • {formatDate(order.createdAt || new Date().toISOString())}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-gray-900 dark:text-white mb-1">{formatCurrency(order.total)}</p>
+                          <p className="text-gray-900 dark:text-white mb-1">{formatCurrency(order.prixTotal || 0)}</p>
                           <Badge variant={getStatusBadge(order.status)}>
                             {order.status.replace("_", " ")}
                           </Badge>
@@ -198,6 +203,9 @@ export function UserDashboard() {
                       </div>
                     </Link>
                   ))}
+                  {recentOrders.length === 0 && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">No orders yet. Start shopping to create your first order.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -1,29 +1,45 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { authService } from "../api/auth.service";
+import { authService, getUserFromToken } from "../api/auth.service";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export default function AuthCallback() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const processedRef = useRef(false);
 
     useEffect(() => {
         const code = searchParams.get("code");
 
         if (code) {
+            if (processedRef.current) {
+                return;
+            }
+            processedRef.current = true;
+
             const handleSocialLogin = async () => {
                 try {
                     const redirectUri = window.location.origin + window.location.pathname;
-                    await authService.socialLogin(code, redirectUri);
+                    const response = await authService.socialLogin(code, redirectUri);
+
+                    const user = getUserFromToken();
+                    const roles: string[] = user?.roles || user?.realm_access?.roles || [];
+                    if (response.role && !roles.includes(response.role)) {
+                        roles.push(response.role);
+                    }
 
                     window.dispatchEvent(new Event("auth-change"));
-                    toast.success("Successfully logged in with Google!");
-                    navigate("/dashboard");
+                    toast.success("Successfully logged in.");
+                    if (roles.includes("ADMIN")) {
+                        navigate("/admin", { replace: true });
+                    } else {
+                        navigate("/dashboard", { replace: true });
+                    }
                 } catch (error: any) {
                     console.error("Social login sync failed", error);
                     toast.error("Failed to sync account. Please try again or use standard login.");
-                    navigate("/login");
+                    navigate("/login", { replace: true });
                 }
             };
 

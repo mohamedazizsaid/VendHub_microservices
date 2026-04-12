@@ -1,41 +1,127 @@
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { Package, Truck, CheckCircle, Clock } from "lucide-react";
+import { Package, Truck, CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
-import { mockOrders, mockProducts } from "../../data/mockData";
 import { formatCurrency, formatDate } from "../../lib/utils";
+import { Commande, orderService } from "../../api/order.service";
+
+const STATUS_FLOW = ["processing", "in_transit", "delivered"] as const;
+
+type OrderStatus = (typeof STATUS_FLOW)[number];
+
+const normalizeStatus = (value?: string): OrderStatus => {
+  const status = (value || "processing").toLowerCase();
+  if (status === "in_transit") return "in_transit";
+  if (status === "delivered") return "delivered";
+  return "processing";
+};
 
 export function OrderTracking() {
   const { id } = useParams();
-  const order = mockOrders.find((o) => o.id === id) || mockOrders[0];
+  const [order, setOrder] = useState<Commande | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const statusSteps = [
-    { label: "Order Placed", icon: CheckCircle, status: "completed", date: order.date },
-    { label: "Processing", icon: Package, status: order.status === "delivered" || order.status === "in_transit" ? "completed" : order.status === "processing" ? "current" : "pending", date: "2026-02-11" },
-    { label: "In Transit", icon: Truck, status: order.status === "delivered" ? "completed" : order.status === "in_transit" ? "current" : "pending", date: order.status === "delivered" || order.status === "in_transit" ? "2026-02-13" : undefined },
-    { label: "Delivered", icon: CheckCircle, status: order.status === "delivered" ? "completed" : "pending", date: order.status === "delivered" ? order.estimatedDelivery : undefined },
-  ];
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!id) {
+        setErrorMessage("Invalid order reference");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await orderService.getCommandeById(Number(id));
+        setOrder(data);
+      } catch (error: any) {
+        setErrorMessage(error.message || "Unable to load order details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrder();
+  }, [id]);
+
+  const status = normalizeStatus(order?.status);
+
+  const statusSteps = useMemo(() => {
+    const createdAt = order?.createdAt || new Date().toISOString();
+    return [
+      {
+        label: "Order Placed",
+        icon: CheckCircle,
+        status: "completed",
+        date: createdAt,
+      },
+      {
+        label: "Processing",
+        icon: Package,
+        status: status === "processing" ? "current" : "completed",
+        date: createdAt,
+      },
+      {
+        label: "In Transit",
+        icon: Truck,
+        status: status === "delivered" ? "completed" : status === "in_transit" ? "current" : "pending",
+        date: status === "in_transit" || status === "delivered" ? createdAt : undefined,
+      },
+      {
+        label: "Delivered",
+        icon: CheckCircle,
+        status: status === "delivered" ? "completed" : "pending",
+        date: status === "delivered" ? createdAt : undefined,
+      },
+    ];
+  }, [order?.createdAt, status]);
+
+  const itemCount = (order?.lignesCommande || []).reduce((sum, line) => sum + (line.quantite || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#16213E] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Loading order tracking...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-[#16213E] flex items-center justify-center px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="py-10 text-center">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+            <h2 className="text-xl text-gray-900 dark:text-white mb-2">Order not found</h2>
+            <p className="text-gray-600 dark:text-gray-400">{errorMessage || "No order was found for this reference."}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#16213E]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl text-gray-900 dark:text-white mb-2">Order Tracking</h1>
-          <p className="text-gray-600 dark:text-gray-400">Order ID: {order.id}</p>
+        <div className="mb-8 rounded-2xl p-6 bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#334155] text-white">
+          <h1 className="text-3xl mb-2">Order Tracking</h1>
+          <p className="text-white/80">Order ID: #{order.id}</p>
         </div>
 
-        {/* Order Status */}
         <Card className="mb-6">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Delivery Status</CardTitle>
               <Badge
                 variant={
-                  order.status === "delivered" ? "success" :
-                  order.status === "in_transit" ? "info" : "warning"
+                  status === "delivered" ? "success" :
+                  status === "in_transit" ? "info" : "warning"
                 }
               >
-                {order.status.replace("_", " ")}
+                {status.replace("_", " ")}
               </Badge>
             </div>
           </CardHeader>
@@ -44,7 +130,7 @@ export function OrderTracking() {
               {statusSteps.map((step, index) => {
                 const Icon = step.icon;
                 const isLast = index === statusSteps.length - 1;
-                
+
                 return (
                   <div key={index} className="flex gap-4 pb-8 last:pb-0">
                     <div className="flex flex-col items-center">
@@ -72,9 +158,7 @@ export function OrderTracking() {
                     <div className="flex-1 pt-2">
                       <h3 className="text-lg text-gray-900 dark:text-white mb-1">{step.label}</h3>
                       {step.date && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {formatDate(step.date)}
-                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(step.date)}</p>
                       )}
                       {step.status === "current" && (
                         <p className="text-sm text-[#FF6B35] mt-1">In progress...</p>
@@ -84,16 +168,9 @@ export function OrderTracking() {
                 );
               })}
             </div>
-            {order.trackingNumber && (
-              <div className="mt-6 p-4 bg-gray-50 dark:bg-[#1F4068] rounded-lg">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Tracking Number</p>
-                <p className="text-lg text-gray-900 dark:text-white">{order.trackingNumber}</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* Shipping Info */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Shipping Information</CardTitle>
@@ -102,42 +179,44 @@ export function OrderTracking() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h4 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Delivery Address</h4>
-                <p className="text-gray-900 dark:text-white">{order.shippingAddress}</p>
+                <p className="text-gray-900 dark:text-white">{order.clientAddress || "Not provided"}</p>
               </div>
               <div>
-                <h4 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Estimated Delivery</h4>
-                <p className="text-gray-900 dark:text-white">{formatDate(order.estimatedDelivery)}</p>
+                <h4 className="text-sm text-gray-600 dark:text-gray-400 mb-2">Contact Phone</h4>
+                <p className="text-gray-900 dark:text-white">{order.clientPhone || "Not provided"}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Order Items */}
         <Card>
           <CardHeader>
-            <CardTitle>Order Items ({order.items})</CardTitle>
+            <CardTitle>Order Items ({itemCount})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockProducts.slice(0, order.items).map((product) => (
-                <div key={product.id} className="flex gap-4 p-4 bg-gray-50 dark:bg-[#1F4068] rounded-lg">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h3 className="text-gray-900 dark:text-white mb-1">{product.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{product.category}</p>
-                    <p className="text-lg text-[#FF6B35]">{formatCurrency(product.price)}</p>
+            {(order.lignesCommande || []).length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-400">No line items found for this order.</p>
+            ) : (
+              <div className="space-y-4">
+                {(order.lignesCommande || []).map((line) => (
+                  <div key={line.id || `${line.produitId}-${line.nomProduit}`} className="flex gap-4 p-4 bg-gray-50 dark:bg-[#1F4068] rounded-lg">
+                    <div className="w-20 h-20 rounded-lg bg-white dark:bg-[#243b55] flex items-center justify-center text-[#FF6B35]">
+                      <Package className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-gray-900 dark:text-white mb-1">{line.nomProduit}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Qty: {line.quantite}</p>
+                      <p className="text-lg text-[#FF6B35]">{formatCurrency(line.prixUnitaire * line.quantite)}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <div className="flex justify-between text-xl text-gray-900 dark:text-white">
                 <span>Total</span>
-                <span>{formatCurrency(order.total)}</span>
+                <span>{formatCurrency(order.prixTotal)}</span>
               </div>
             </div>
           </CardContent>

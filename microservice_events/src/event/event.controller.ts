@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     Controller,
     Get,
     Post,
@@ -6,16 +7,35 @@ import {
     Patch,
     Param,
     Delete,
+    UploadedFile,
+    UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { CloudinaryService } from './cloudinary.service';
 
 @ApiTags('events')
 @Controller('api/events')
 export class EventController {
-    constructor(private readonly eventService: EventService) { }
+    constructor(
+        private readonly eventService: EventService,
+        private readonly cloudinaryService: CloudinaryService,
+    ) { }
+
+    @Post('upload-image')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiOperation({ summary: 'Upload event image to Cloudinary' })
+    async uploadImage(@UploadedFile() file: any) {
+        if (!file) {
+            throw new BadRequestException('Image file is required');
+        }
+
+        const imageUrl = await this.cloudinaryService.uploadImage(file.buffer);
+        return { imageUrl };
+    }
 
     @Post()
     @ApiOperation({ summary: 'Create a new event' })

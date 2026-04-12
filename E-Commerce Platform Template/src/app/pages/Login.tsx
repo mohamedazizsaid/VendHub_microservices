@@ -4,6 +4,7 @@ import { FaceIdModal } from "../components/auth/FaceIdModal";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/Dialog";
 import { useState, useEffect } from "react";
 import { authService, getUserFromToken } from "../api/auth.service";
 import { toast } from "sonner";
@@ -17,6 +18,13 @@ export default function Login() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [faceIdActive, setFaceIdActive] = useState(false);
   const [targetImageUrl, setTargetImageUrl] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<"request" | "reset">("request");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Load remembered username
   useEffect(() => {
@@ -143,6 +151,48 @@ export default function Login() {
     }
   };
 
+  const handleRequestResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setForgotLoading(true);
+      await authService.requestPasswordReset(forgotEmail);
+      toast.success("Reset code sent to your email.");
+      setForgotStep("reset");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reset code.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    try {
+      setForgotLoading(true);
+      await authService.resetPasswordWithCode({
+        email: forgotEmail,
+        code: resetCode,
+        newPassword,
+      });
+      toast.success("Password updated. You can now log in.");
+      setForgotOpen(false);
+      setForgotStep("request");
+      setResetCode("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to reset password.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
@@ -210,14 +260,17 @@ export default function Login() {
                       />
                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Remember me</span>
                     </label>
-                    <a
-                      href="http://127.0.0.1:8181/realms/micro_service_spring/login-actions/reset-credentials"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotEmail(formData.username.includes("@") ? formData.username : "");
+                        setForgotStep("request");
+                        setForgotOpen(true);
+                      }}
                       className="text-sm text-[#FF6B35] hover:underline"
                     >
                       Forgot password?
-                    </a>
+                    </button>
                   </div>
 
                   {/* reCAPTCHA Section with "Directions" */}
@@ -340,6 +393,72 @@ export default function Login() {
         targetImageUrl={targetImageUrl}
         onSuccess={handleFaceIdSuccess}
       />
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="sm:max-w-[520px] bg-white dark:bg-[#1B1B2F] border-gray-200 dark:border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+              {forgotStep === "request" ? "Reset Password" : "Enter Reset Code"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {forgotStep === "request" ? (
+            <form className="space-y-4 mt-4" onSubmit={handleRequestResetCode}>
+              <Input
+                label="Email"
+                type="email"
+                placeholder="Enter your account email"
+                required
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+              />
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={forgotLoading}>
+                  {forgotLoading ? "Sending..." : "Send code"}
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <form className="space-y-4 mt-4" onSubmit={handleResetPassword}>
+              <Input
+                label="Verification Code"
+                type="text"
+                placeholder="Enter 6-digit code"
+                required
+                value={resetCode}
+                onChange={(e) => setResetCode(e.target.value)}
+              />
+              <Input
+                label="New Password"
+                type="password"
+                placeholder="Enter new password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <Input
+                label="Confirm Password"
+                type="password"
+                placeholder="Confirm new password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <div className="flex justify-end gap-3">
+                <Button type="button" variant="outline" onClick={() => setForgotStep("request")}>
+                  Back
+                </Button>
+                <Button type="submit" disabled={forgotLoading}>
+                  {forgotLoading ? "Updating..." : "Update password"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

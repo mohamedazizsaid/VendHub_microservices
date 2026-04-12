@@ -14,5 +14,6 @@ public class UserRegistrationDto {
     private String firstName;
     private String lastName;
     private String phone;
+    private String statut;
     private String recaptchaToken;
 }

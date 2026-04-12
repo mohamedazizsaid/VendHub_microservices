@@ -13,7 +13,7 @@ export const recommendationService = {
         if (!user) {
             return [];
         }
-        return apiClient(`/api/products/recommendations?limit=${limit}`);
+        return apiClient(`/api/products/recommendations?limit=${limit}`, { skipAuthRedirect: true });
     },
 
     getPopularProducts: async (limit: number = 10): Promise<Product[]> => {
@@ -25,6 +25,6 @@ export const recommendationService = {
         if (!user) {
             throw new Error('You must be logged in to view your statistics');
         }
-        return apiClient('/api/products/my-stats');
+        return apiClient('/api/products/my-stats', { skipAuthRedirect: true });
     },
 };

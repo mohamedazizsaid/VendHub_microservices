@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api6/commandes")
 public class CommandController {
@@ -18,8 +20,29 @@ public class CommandController {
     public ResponseEntity<?> createCommande(@RequestBody Commande commande) {
         try {
             Commande createdCommande = commandeService.createCommande(commande);
-            createdCommande.setCreatedAt(java.time.LocalDateTime.now());
             return new ResponseEntity<>(createdCommande, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAllCommandes() {
+        try {
+            List<Commande> commandes = commandeService.getAllCommandes();
+            return new ResponseEntity<>(commandes, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/client/{clientId}")
+    public ResponseEntity<?> getCommandesByClientId(@PathVariable String clientId) {
+        try {
+            List<Commande> commandes = commandeService.getCommandesByClientId(clientId);
+            return new ResponseEntity<>(commandes, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (RuntimeException e) {

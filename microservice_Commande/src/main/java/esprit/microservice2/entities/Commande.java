@@ -17,18 +17,28 @@ import java.util.List;
 public class Commande {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-        private Long id;
-        private Number clientId;
-        private String clientName;
-        private String clientAddress;
-        private String clientPhone;
-        private BigDecimal prixTotal;
-        private String status;
-        private LocalDateTime createdAt;
+    private Long id;
+
+    private String clientId;
+    private String clientName;
+    private String clientAddress;
+    private String clientPhone;
+    private BigDecimal prixTotal;
+    private String status;
+    private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "commande", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<LigneCommande> lignesCommande = new ArrayList<>();
 
+    @PrePersist
+    public void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (status == null || status.isBlank()) {
+            status = "processing";
+        }
+    }
 
     public void addLigneCommande(LigneCommande ligne) {
         lignesCommande.add(ligne);

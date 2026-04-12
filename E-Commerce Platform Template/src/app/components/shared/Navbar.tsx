@@ -6,6 +6,7 @@ import { Button } from "../ui/Button";
 import { toast } from "sonner";
 import { authService, getUserFromToken } from "../../api/auth.service";
 import { productService } from "../../api/product.service";
+import { cartStore } from "../../lib/cart";
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -14,6 +15,7 @@ export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -24,7 +26,7 @@ export function Navbar() {
         try {
           const user = getUserFromToken();
           if (user?.sub) {
-            const profileData = await authService.getUser(user.sub);
+            const profileData = await authService.getUser(user.sub, { skipAuthRedirect: true, omitAuthHeader: true });
             setProfile(profileData);
           }
         } catch (error) {
@@ -45,6 +47,10 @@ export function Navbar() {
       }
     };
 
+    const syncCartCount = () => {
+      setCartCount(cartStore.getCount());
+    };
+
     const handleAuthChange = async () => {
       await checkAuth();
       const token = localStorage.getItem("token");
@@ -54,16 +60,21 @@ export function Navbar() {
     };
 
     checkAuth();
-    fetchFavoritesCount();
+    if (localStorage.getItem("token")) {
+      fetchFavoritesCount();
+    }
+    syncCartCount();
     
     window.addEventListener("auth-change", handleAuthChange);
     window.addEventListener("storage", checkAuth);
     window.addEventListener("favorites-changed", fetchFavoritesCount);
+    window.addEventListener(cartStore.eventName, syncCartCount);
 
     return () => {
       window.removeEventListener("auth-change", handleAuthChange);
       window.removeEventListener("storage", checkAuth);
       window.removeEventListener("favorites-changed", fetchFavoritesCount);
+      window.removeEventListener(cartStore.eventName, syncCartCount);
     };
   }, []);
 
@@ -139,7 +150,7 @@ export function Navbar() {
                 <Link to="/cart" className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300">
                   <ShoppingCart className="w-6 h-6" />
                   <span className="absolute -top-1 -right-1 bg-[#FF6B35] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                    0
+                    {cartCount}
                   </span>
                 </Link>
               </>

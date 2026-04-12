@@ -2,11 +2,14 @@ const BASE_URL = 'http://localhost:8085'; // Single entry point via Gateway
 
 interface ApiClientOptions extends RequestInit {
     skipAuthRedirect?: boolean;
+    suppressNoTokenWarning?: boolean;
+    omitAuthHeader?: boolean;
 }
 
 export const apiClient = async (endpoint: string, options: ApiClientOptions = {}) => {
-    const token = localStorage.getItem('token');
-    const { skipAuthRedirect = false, ...fetchOptions } = options;
+    const rawToken = localStorage.getItem('token');
+    const token = rawToken && rawToken !== 'undefined' && rawToken !== 'null' ? rawToken : null;
+    const { skipAuthRedirect = false, suppressNoTokenWarning = false, omitAuthHeader = false, ...fetchOptions } = options;
 
     const headers: HeadersInit = {
         ...(fetchOptions.headers || {}),
@@ -17,9 +20,9 @@ export const apiClient = async (endpoint: string, options: ApiClientOptions = {}
         (headers as any)['Content-Type'] = 'application/json';
     }
 
-    if (token) {
+    if (token && !omitAuthHeader) {
         (headers as any)['Authorization'] = `Bearer ${token}`;
-    } else {
+    } else if (!suppressNoTokenWarning && !omitAuthHeader) {
         console.warn('No token found in localStorage - request will be unauthorized');
     }
 
@@ -36,6 +39,7 @@ export const apiClient = async (endpoint: string, options: ApiClientOptions = {}
         if (!skipAuthRedirect) {
             localStorage.removeItem('token');
             localStorage.removeItem('refreshToken');
+            localStorage.removeItem('faceIdUser');
             window.location.href = '/login';
         }
         throw new Error('Session expired. Please login again.');

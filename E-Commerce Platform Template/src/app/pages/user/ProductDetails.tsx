@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router";
-import { Star, Heart, ShoppingCart, Truck, Shield, Package, ChevronLeft, Minus, Plus } from "lucide-react";
+import { useParams, Link } from "react-router";
+import { Star, Heart, ShoppingCart, Truck, Shield, Package, Minus, Plus } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
@@ -9,10 +9,10 @@ import { productService, Product } from "../../api/product.service";
 import { getUserFromToken } from "../../api/auth.service";
 import { useTrackProductView } from "../../hooks/useProductInteraction";
 import { toast } from "sonner";
+import { cartStore } from "../../lib/cart";
 
 export function ProductDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -88,6 +88,18 @@ export function ProductDetails() {
     } finally {
       setIsLoadingFavorite(false);
     }
+  };
+
+  const handleAddToCart = () => {
+    if (!product || !product.id) return;
+
+    if (!product.status || (product.stock ?? 0) <= 0) {
+      toast.error("This product is currently out of stock");
+      return;
+    }
+
+    cartStore.addProduct(product, quantity);
+    toast.success("Added to cart successfully");
   };
 
   if (loading) {
@@ -197,6 +209,7 @@ export function ProductDetails() {
                     size="lg" 
                     disabled={product.stock === 0 || !product.status}
                     variant={product.stock === 0 ? "secondary" : "primary"}
+                    onClick={handleAddToCart}
                   >
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     Add to Cart

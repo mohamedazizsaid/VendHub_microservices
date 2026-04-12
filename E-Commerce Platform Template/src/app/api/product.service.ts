@@ -31,15 +31,15 @@ const checkAdminRole = () => {
 
 export const productService = {
     getAllProducts: async (): Promise<Product[]> => {
-        return apiClient('/api/products', { skipAuthRedirect: true });
+        return apiClient('/api/products', { skipAuthRedirect: true, omitAuthHeader: true, suppressNoTokenWarning: true });
     },
 
     getAllCategories: async (): Promise<string[]> => {
-        return apiClient('/api/products/categories', { skipAuthRedirect: true });
+        return apiClient('/api/products/categories', { skipAuthRedirect: true, omitAuthHeader: true, suppressNoTokenWarning: true });
     },
 
     getProductById: async (id: number): Promise<Product> => {
-        return apiClient(`/api/products/${id}`, { skipAuthRedirect: true });
+        return apiClient(`/api/products/${id}`, { skipAuthRedirect: true, omitAuthHeader: true, suppressNoTokenWarning: true });
     },
 
     createProduct: async (formData: FormData): Promise<Product> => {
@@ -113,7 +113,10 @@ export const productService = {
             return 0;
         }
         try {
-            const favorites = await apiClient('/api/products/favorites');
+            const favorites = await apiClient('/api/products/favorites', {
+                skipAuthRedirect: true,
+                suppressNoTokenWarning: true,
+            });
             return Array.isArray(favorites) ? favorites.length : 0;
         } catch (error) {
             console.error('Failed to get favorites count:', error);

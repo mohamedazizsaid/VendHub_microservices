@@ -20,6 +20,7 @@ import { ShoppingCart } from "./pages/user/ShoppingCart";
 import { Favorites } from "./pages/user/Favorites";
 import { EventsList } from "./pages/user/EventsList";
 import { EventDetails } from "./pages/user/EventDetails";
+import { OrdersList } from "./pages/user/OrdersList";
 import { OrderTracking } from "./pages/user/OrderTracking";
 import { Support } from "./pages/user/Support";
 import { ForumsList } from "./pages/user/ForumsList";
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
           { path: "favorites", Component: Favorites },
           { path: "forums", Component: ForumsList },
           { path: "forums/:id", Component: ForumDiscussion },
+          { path: "orders", Component: OrdersList },
           { path: "orders/:id", Component: OrderTracking },
           { path: "support", Component: Support },
         ],

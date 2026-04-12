@@ -1,4 +1,4 @@
-import { Search, Plus, Edit, Trash2, Users, Calendar, MapPin, Info, Save, X } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Users, Calendar, MapPin, Info, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -29,6 +29,7 @@ export function EventManagement() {
   const [editingEvent, setEditingEvent] = useState<Partial<Event> | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -70,6 +71,11 @@ export function EventManagement() {
     e.preventDefault();
     if (!editingEvent) return;
 
+    if (!editingEvent.image) {
+      toast.error("Please upload an image before saving");
+      return;
+    }
+
     try {
       const payload = {
         ...editingEvent,
@@ -91,6 +97,21 @@ export function EventManagement() {
       fetchEvents();
     } catch (error) {
       toast.error("Failed to save event");
+    }
+  };
+
+  const handleImageUpload = async (file: File | null) => {
+    if (!file || !editingEvent) return;
+
+    try {
+      setIsUploadingImage(true);
+      const response = await eventService.uploadEventImage(file);
+      setEditingEvent({ ...editingEvent, image: response.imageUrl });
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -185,15 +206,14 @@ export function EventManagement() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Image URL</Label>
-                <div className="flex gap-4 items-start">
+                <Label htmlFor="image" className="text-gray-700 dark:text-gray-300">Event Image</Label>
+                <div className="flex gap-4 items-start flex-wrap">
                   <Input
                     id="image"
-                    value={editingEvent?.image || ""}
-                    onChange={(e) => setEditingEvent({ ...editingEvent, image: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e.target.files?.[0] || null)}
                     className="flex-1"
-                    required
                   />
                   {editingEvent?.image && (
                     <div className="w-16 h-16 rounded-md overflow-hidden border border-gray-200 dark:border-gray-800 flex-shrink-0">
@@ -201,6 +221,12 @@ export function EventManagement() {
                     </div>
                   )}
                 </div>
+                {isUploadingImage && (
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Uploading image...</p>
+                )}
+                {editingEvent?.image && (
+                  <p className="text-xs text-green-600 dark:text-green-400">Image uploaded and ready.</p>
+                )}
               </div>
               <div className="flex justify-end gap-3 mt-6">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>

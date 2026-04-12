@@ -2,7 +2,10 @@ package esprit.microservice1.services;
 
 import esprit.microservice1.dto.*;
 import esprit.microservice1.entities.Role;
+import esprit.microservice1.entities.Statut;
 import esprit.microservice1.entities.User;
+import esprit.microservice1.entities.PasswordResetCode;
+import esprit.microservice1.repositories.PasswordResetCodeRepository;
 import esprit.microservice1.repositories.UserRespository;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
@@ -18,10 +21,21 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @Service
 public class KeycloakServiceImpl implements KeycloakService {
@@ -44,6 +58,11 @@ public class KeycloakServiceImpl implements KeycloakService {
     @Autowired
     private UserRespository userRepository;
 
+    @Autowired
+    private PasswordResetCodeRepository passwordResetCodeRepository;
+
+    private final EmailService emailService;
+
     @Value("${keycloak.admin.realm:master}")
     private String adminRealm;
 
@@ -62,9 +81,10 @@ public class KeycloakServiceImpl implements KeycloakService {
     @Value("${google.recaptcha.secret-key}")
     private String captchaSecret;
 
-    public KeycloakServiceImpl(Keycloak keycloak, RestTemplate restTemplate) {
+    public KeycloakServiceImpl(Keycloak keycloak, RestTemplate restTemplate, EmailService emailService) {
         this.keycloak = keycloak;
         this.restTemplate = restTemplate;
+        this.emailService = emailService;
     }
 
     /**
@@ -92,7 +112,12 @@ public class KeycloakServiceImpl implements KeycloakService {
         System.out.println("Getting Admin Token from: " + tokenUrl);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    tokenUrl,
+                    HttpMethod.POST,
+                    request,
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {
+                    });
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 return (String) response.getBody().get("access_token");
             }
@@ -125,7 +150,7 @@ public class KeycloakServiceImpl implements KeycloakService {
             System.out.println("✓ User found in local DB: " + user.getUsername());
 
             // 2. Vérifier si le compte est activé
-            if (!user.isEnabled()) {
+            if (user.getStatut() != Statut.ACTIVE) {
                 System.err.println("User account disabled: " + user.getUsername());
                 throw new RuntimeException("Le compte utilisateur est désactivé.");
             }
@@ -269,10 +294,20 @@ public class KeycloakServiceImpl implements KeycloakService {
                         : 0;
                 String tokenType = (String) body.get("token_type");
 
-                // Sync user with local DB
-                syncSocialUser(accessToken);
+                // Sync user with local DB and enrich login response
+                User localUser = syncSocialUser(accessToken);
 
-                return new LoginResponse(accessToken, refreshToken, expiresIn, refreshExpiresIn, tokenType);
+                if (localUser.getStatut() != Statut.ACTIVE) {
+                    throw new RuntimeException("Le compte utilisateur est désactivé.");
+                }
+
+                LoginResponse loginResponse = new LoginResponse(accessToken, refreshToken, expiresIn, refreshExpiresIn,
+                        tokenType);
+                loginResponse.setUserId(localUser.getIdKeycloak());
+                loginResponse.setUsername(localUser.getUsername());
+                loginResponse.setRole(localUser.getRole() != null ? localUser.getRole().name() : "USER");
+                loginResponse.setImageUrl(localUser.getImageUrl());
+                return loginResponse;
             }
 
             throw new RuntimeException("Failed to exchange social code for tokens");
@@ -285,7 +320,7 @@ public class KeycloakServiceImpl implements KeycloakService {
     /**
      * Fetch user info from Keycloak and sync with local DB if necessary
      */
-    private void syncSocialUser(String accessToken) {
+    private User syncSocialUser(String accessToken) {
         try {
             // Instead of calling userinfo endpoint (which might fail with 401),
             // we decode the access_token JWT directly
@@ -294,40 +329,96 @@ public class KeycloakServiceImpl implements KeycloakService {
             String payload = new String(decoder.decode(chunks[1]));
 
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> userInfo = mapper.readValue(payload, Map.class);
+            Map<String, Object> userInfo = mapper.readValue(payload, new TypeReference<Map<String, Object>>() {
+            });
 
             String keycloakId = (String) userInfo.get("sub");
             String username = (String) userInfo.get("preferred_username");
             String email = (String) userInfo.get("email");
 
-            String effectiveUsername = username != null ? username : email;
-            if (effectiveUsername == null)
-                effectiveUsername = keycloakId;
+            final String effectiveUsername = (username != null ? username : email) != null
+                    ? (username != null ? username : email)
+                    : keycloakId;
 
-            // Check if user exists in local DB
-            boolean alreadyExists = userRepository.findByIdKeycloak(keycloakId).isPresent() ||
-                    (email != null && userRepository.findByEmail(email).isPresent()) ||
-                    (effectiveUsername != null && userRepository.findByUsername(effectiveUsername).isPresent());
+            Optional<User> existing = userRepository.findByIdKeycloak(keycloakId)
+                    .or(() -> email == null ? Optional.empty() : userRepository.findByEmail(email))
+                    .or(() -> effectiveUsername == null ? Optional.empty()
+                            : userRepository.findByUsername(effectiveUsername));
 
-            if (!alreadyExists) {
-
-                System.out.println("Syncing new social user: " + effectiveUsername);
-                User newUser = new User();
-                newUser.setIdKeycloak(keycloakId);
-                newUser.setUsername(effectiveUsername);
-                newUser.setEmail(email != null ? email : effectiveUsername + "@social.com");
-                newUser.setPassword("SOCIAL_LOGIN_MANAGED");
-                newUser.setRole(Role.USER);
-                newUser.setCreatedAt(java.time.LocalDateTime.now());
-                userRepository.save(newUser);
-                System.out.println("✓ Social user saved to MySQL.");
-            } else {
-                System.out.println("Social user already exists in MySQL.");
+            if (existing.isPresent()) {
+                User user = existing.get();
+                if (user.getIdKeycloak() == null || user.getIdKeycloak().isEmpty()) {
+                    user.setIdKeycloak(keycloakId);
+                }
+                if (email != null && !email.isEmpty()) {
+                    user.setEmail(email);
+                }
+                if (effectiveUsername != null && !effectiveUsername.isEmpty()) {
+                    user.setUsername(effectiveUsername);
+                }
+                return userRepository.save(user);
             }
+
+            System.out.println("Syncing new social user: " + effectiveUsername);
+            User newUser = new User();
+            newUser.setIdKeycloak(keycloakId);
+            newUser.setUsername(effectiveUsername);
+            newUser.setEmail(email != null ? email : effectiveUsername + "@social.com");
+            newUser.setPassword("SOCIAL_LOGIN_MANAGED");
+            newUser.setRole(Role.USER);
+            newUser.setStatut(Statut.ACTIVE);
+            newUser.setCreatedAt(java.time.LocalDateTime.now());
+            User saved = userRepository.save(newUser);
+            System.out.println("✓ Social user saved to MySQL.");
+            return saved;
         } catch (Exception e) {
             System.err.println("Failed to sync social user from JWT: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("Failed to sync social user", e);
         }
+    }
+
+    @Override
+    public void sendPasswordResetCode(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Aucun compte trouvé avec cet email."));
+
+        if (user.getIdKeycloak() == null || user.getIdKeycloak().isEmpty()) {
+            throw new RuntimeException("Compte invalide pour reset password.");
+        }
+
+        passwordResetCodeRepository.deleteByExpiresAtBefore(LocalDateTime.now());
+
+        String code = String.format("%06d", new Random().nextInt(1_000_000));
+        PasswordResetCode resetCode = PasswordResetCode.builder()
+                .email(email)
+                .code(code)
+                .expiresAt(LocalDateTime.now().plusMinutes(10))
+                .used(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        passwordResetCodeRepository.save(resetCode);
+        emailService.sendResetCode(email, code);
+    }
+
+    @Override
+    @Transactional
+    public void resetPasswordWithCode(String email, String code, String newPassword) {
+        PasswordResetCode resetCode = passwordResetCodeRepository
+                .findTopByEmailAndCodeAndUsedFalseOrderByCreatedAtDesc(email, code)
+                .orElseThrow(() -> new RuntimeException("Code invalide."));
+
+        if (resetCode.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Code expiré.");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Aucun compte trouvé avec cet email."));
+
+        setUserPassword(user.getIdKeycloak(), newPassword);
+
+        resetCode.setUsed(true);
+        passwordResetCodeRepository.save(resetCode);
     }
 
     @Override
@@ -462,7 +553,7 @@ public class KeycloakServiceImpl implements KeycloakService {
         user.setEmail(dto.getEmail());
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
-        user.setEnabled(true);
+        user.setEnabled(parseStatut(dto.getStatut()) == Statut.ACTIVE);
         user.setEmailVerified(true);
 
         if (dto.getPhone() != null && !dto.getPhone().isEmpty()) {
@@ -538,8 +629,21 @@ public class KeycloakServiceImpl implements KeycloakService {
         dbUser.setPassword("MANAGED_BY_KEYCLOAK");
         dbUser.setRole(Role.USER);
         dbUser.setPhone(dto.getPhone());
+        dbUser.setStatut(parseStatut(dto.getStatut()));
 
         userRepository.save(dbUser);
+    }
+
+    private Statut parseStatut(String statut) {
+        if (statut == null || statut.trim().isEmpty()) {
+            return Statut.ACTIVE;
+        }
+
+        try {
+            return Statut.valueOf(statut.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return Statut.ACTIVE;
+        }
     }
 
     @Override
@@ -710,6 +814,10 @@ public class KeycloakServiceImpl implements KeycloakService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé."));
 
+        if (user.getStatut() != Statut.ACTIVE) {
+            throw new RuntimeException("Le compte utilisateur est désactivé.");
+        }
+
         if (user.getImageUrl() == null || user.getImageUrl().isEmpty()) {
             throw new RuntimeException("FaceID n'est pas configuré pour ce compte (image manquante).");
         }
@@ -788,7 +896,12 @@ public class KeycloakServiceImpl implements KeycloakService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    request,
+                    new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {
+                    });
             Map<String, Object> body = response.getBody();
 
             if (body == null || !((Boolean) body.get("success"))) {
@@ -799,6 +912,67 @@ public class KeycloakServiceImpl implements KeycloakService {
         } catch (Exception e) {
             System.err.println("Error during CAPTCHA verification: " + e.getMessage());
             throw new RuntimeException("Erreur lors de la vérification du CAPTCHA : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Page<User> getUsers(int page, int size, String search, String role, String status) {
+        List<User> allUsers = userRepository.findAll();
+
+        String normalizedSearch = search == null ? "" : search.trim().toLowerCase(Locale.ROOT);
+        String normalizedRole = role == null ? "" : role.trim().toUpperCase(Locale.ROOT);
+        String normalizedStatus = status == null ? "" : status.trim().toUpperCase(Locale.ROOT);
+
+        List<User> filtered = allUsers.stream()
+                .filter(user -> {
+                    if (normalizedSearch.isEmpty()) {
+                        return true;
+                    }
+
+                    String username = user.getUsername() == null ? "" : user.getUsername().toLowerCase(Locale.ROOT);
+                    String email = user.getEmail() == null ? "" : user.getEmail().toLowerCase(Locale.ROOT);
+                    String phone = user.getPhone() == null ? "" : user.getPhone().toLowerCase(Locale.ROOT);
+
+                    return username.contains(normalizedSearch)
+                            || email.contains(normalizedSearch)
+                            || phone.contains(normalizedSearch);
+                })
+                .filter(user -> normalizedRole.isEmpty()
+                        || "ALL".equals(normalizedRole)
+                        || (user.getRole() != null && user.getRole().name().equalsIgnoreCase(normalizedRole)))
+                .filter(user -> normalizedStatus.isEmpty()
+                        || "ALL".equals(normalizedStatus)
+                        || (user.getStatut() != null && user.getStatut().name().equalsIgnoreCase(normalizedStatus)))
+                .collect(Collectors.toList());
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(size, 1);
+        int fromIndex = safePage * safeSize;
+        if (fromIndex >= filtered.size()) {
+            return new PageImpl<>(Collections.emptyList(), PageRequest.of(safePage, safeSize), filtered.size());
+        }
+
+        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
+        List<User> pageContent = filtered.subList(fromIndex, toIndex);
+
+        return new PageImpl<>(pageContent, PageRequest.of(safePage, safeSize), filtered.size());
+    }
+
+    @Override
+    public void updateUserStatus(String userId, Statut statut) {
+        User user = userRepository.findByIdKeycloak(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with Keycloak ID: " + userId));
+
+        user.setStatut(statut);
+        userRepository.save(user);
+
+        try {
+            UserResource userResource = keycloak.realm(realm).users().get(userId);
+            UserRepresentation userRep = userResource.toRepresentation();
+            userRep.setEnabled(statut == Statut.ACTIVE);
+            userResource.update(userRep);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update user status in Keycloak: " + e.getMessage(), e);
         }
     }
 }

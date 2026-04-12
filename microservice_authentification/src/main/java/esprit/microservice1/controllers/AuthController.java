@@ -1,10 +1,14 @@
 package esprit.microservice1.controllers;
 
 import esprit.microservice1.dto.*;
+import esprit.microservice1.entities.Statut;
 import esprit.microservice1.services.KeycloakService;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import esprit.microservice1.entities.User;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -31,6 +35,26 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/forgot-password/request")
+    public ResponseEntity<?> requestPasswordReset(@RequestBody ForgotPasswordRequestDto dto) {
+        try {
+            keycloakService.sendPasswordResetCode(dto.getEmail());
+            return ResponseEntity.ok("Reset code sent to your email");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/forgot-password/reset")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordWithCodeDto dto) {
+        try {
+            keycloakService.resetPasswordWithCode(dto.getEmail(), dto.getCode(), dto.getNewPassword());
+            return ResponseEntity.ok("Password updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -127,6 +151,37 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "ALL") String role,
+            @RequestParam(defaultValue = "ALL") String status) {
+        try {
+            Page<User> users = keycloakService.getUsers(page, size, search, role, status);
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to fetch users: " + e.getMessage());
+        }
+    }
+
+    @PatchMapping("/users/{userId}/status")
+    public ResponseEntity<?> updateUserStatus(@PathVariable String userId, @RequestParam String status) {
+        try {
+            Statut statut = Statut.valueOf(status.toUpperCase());
+            keycloakService.updateUserStatus(userId, statut);
+            return ResponseEntity.ok("User status updated successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid status. Use ACTIVE or INACTIVE");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to update user status: " + e.getMessage());
         }
     }
 

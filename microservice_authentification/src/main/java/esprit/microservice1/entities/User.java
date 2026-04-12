@@ -41,10 +41,17 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Statut statut = Statut.ACTIVE;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (statut == null) {
+            statut = Statut.ACTIVE;
         }
     }
 
@@ -73,6 +80,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return statut == Statut.ACTIVE;
     }
 }

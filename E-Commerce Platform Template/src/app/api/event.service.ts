@@ -41,6 +41,16 @@ export const eventService = {
         });
     },
 
+    uploadEventImage: async (file: File): Promise<{ imageUrl: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return apiClient('/api/events/upload-image', {
+            method: 'POST',
+            body: formData,
+        });
+    },
+
     isParticipating: async (id: string, userId: string): Promise<boolean> => {
         return apiClient(`/api/events/${id}/is-participating/${userId}`);
     },

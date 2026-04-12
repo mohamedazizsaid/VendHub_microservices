@@ -9,7 +9,7 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     const token = localStorage.getItem("token");
     const user = getUserFromToken();
 
-    if (!token) {
+    if (!token || !user) {
         return <Navigate to="/login" replace />;
     }
 

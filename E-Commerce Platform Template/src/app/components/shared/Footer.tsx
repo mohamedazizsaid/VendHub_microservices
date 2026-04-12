@@ -71,7 +71,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/orders/track" className="text-gray-300 hover:text-[#00D4FF] transition-colors text-sm">
+                <Link to="/orders" className="text-gray-300 hover:text-[#00D4FF] transition-colors text-sm">
                   Track Order
                 </Link>
               </li>

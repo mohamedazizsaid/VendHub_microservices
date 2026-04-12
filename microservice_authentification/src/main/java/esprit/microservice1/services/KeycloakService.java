@@ -3,7 +3,9 @@ package esprit.microservice1.services;
 import esprit.microservice1.dto.LoginResponse;
 import esprit.microservice1.dto.UserRegistrationDto;
 import esprit.microservice1.dto.UserUpdateDto;
+import esprit.microservice1.entities.Statut;
 import esprit.microservice1.entities.User;
+import org.springframework.data.domain.Page;
 
 public interface KeycloakService {
 
@@ -25,6 +27,10 @@ public interface KeycloakService {
      * @return LoginResponse containing tokens
      */
     LoginResponse socialLogin(String code, String redirectUri);
+
+    void sendPasswordResetCode(String email);
+
+    void resetPasswordWithCode(String email, String code, String newPassword);
 
     /**
      * Logout user by invalidating refresh token
@@ -107,4 +113,8 @@ public interface KeycloakService {
     User getUserByUsername(String username);
 
     LoginResponse loginByFaceId(String username);
+
+    Page<User> getUsers(int page, int size, String search, String role, String status);
+
+    void updateUserStatus(String userId, Statut statut);
 }

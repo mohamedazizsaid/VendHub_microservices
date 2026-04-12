@@ -10,12 +10,12 @@ export interface LigneCommande {
 
 export interface Commande {
     id?: number;
-    clientId: number;
+    clientId: string;
     clientName: string;
     clientAddress: string;
     clientPhone: string;
     prixTotal: number;
-    status: string;
+    status: 'processing' | 'in_transit' | 'delivered' | string;
     createdAt?: string;
     lignesCommande?: LigneCommande[];
 }
@@ -23,6 +23,14 @@ export interface Commande {
 export const orderService = {
     getCommandeById: async (id: number): Promise<Commande> => {
         return apiClient(`/api6/commandes/${id}`);
+    },
+
+    getCommandesByClientId: async (clientId: string): Promise<Commande[]> => {
+        return apiClient(`/api6/commandes/client/${encodeURIComponent(clientId)}`);
+    },
+
+    getAllCommandes: async (): Promise<Commande[]> => {
+        return apiClient('/api6/commandes');
     },
 
     createCommande: async (commande: Commande): Promise<Commande> => {
