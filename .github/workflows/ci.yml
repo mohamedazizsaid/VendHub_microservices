@@ -66,7 +66,6 @@ jobs:
     name: SonarQube Analysis
     runs-on: ubuntu-latest
     needs: [java-build, node-build]
-    if: ${{ secrets.SONAR_TOKEN != '' && secrets.SONAR_HOST_URL != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,5 +75,5 @@ jobs:
       - name: Sonar scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: sqa_f4d2b993f9cf7ea79443e64f9aa512a6141fd59d
+          SONAR_HOST_URL: localhost://9000
