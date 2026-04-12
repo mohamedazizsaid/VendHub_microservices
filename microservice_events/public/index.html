@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Socket - Events Disponibles</title>
+    <style>
+
+    </style>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Événements Disponibles</h1>
+        <input type="text" id="search" placeholder="id event">
+        <button onclick="getAvailableEvents()">Afficher les événements disponibles</button>
+
+        <div id="events-list"></div>
+    </div>
+    <script>
+        const socket = io('http://localhost:3000');
+        const listDiv = document.getElementById('events-list');
+
+        function displayEvents(events) {
+            listDiv.innerHTML = '';
+            if (!events || events.length === 0) {
+                listDiv.innerHTML = '<p>Aucun événement disponible trouvé.</p>';
+                return;
+            }
+
+            events.forEach(event => {
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.innerHTML = `
+                    <h3>${event.name}</h3>
+                    <p><strong>Catégorie:</strong> ${event.category}</p>
+                    <p><strong>Capacité:</strong> ${event.capacity}</p>
+                    <p><strong>Date:</strong> ${event.date}</p>
+                    <p><strong>Disponible:</strong> ${event.available ? 'Oui' : 'Non'}</p>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        socket.on('connect', () => {
+            console.log('Connecté au serveur Socket.IO');
+        });
+
+        socket.on('availableEvents', (data) => {
+            console.log('Events reçus:', data);
+            displayEvents(data);
+        });
+
+        function getAvailableEvents() {
+            console.log("Demande des événements disponibles...");
+            socket.emit('getAvailableEvents');
+        }
+    </script>
+</body>
+
+</html>
