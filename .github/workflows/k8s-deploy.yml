@@ -1,0 +1,35 @@
+name: Kubernetes Deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl context
+        run: kubectl config use-context minikube
+
+      - name: Create namespace
+        run: kubectl create namespace micro-platform --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply manifests
+        run: |
+          kubectl apply -n micro-platform -f k8s/infra/
+          kubectl apply -n micro-platform -f k8s/services/
+          kubectl apply -n micro-platform -f k8s/observability/
+
+      - name: Rollout status
+        run: |
+          kubectl rollout status deployment/eureka -n micro-platform
+          kubectl rollout status deployment/gateway -n micro-platform
+          kubectl rollout status deployment/microservice-auth -n micro-platform
+          kubectl rollout status deployment/microservice-products -n micro-platform
+          kubectl rollout status deployment/microservice-commande -n micro-platform
+          kubectl rollout status deployment/microservice-forum -n micro-platform
+          kubectl rollout status deployment/microservice-reclamation -n micro-platform
+          kubectl rollout status deployment/microservice-events -n micro-platform
+          kubectl rollout status deployment/frontend -n micro-platform

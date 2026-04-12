@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-products
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-products
+  template:
+    metadata:
+      labels:
+        app: microservice-products
+    spec:
+      containers:
+        - name: microservice-products
+          image: mohamedazizsaid/microservice_products:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+          ports:
+            - containerPort: 8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice-products
+spec:
+  selector:
+    app: microservice-products
+  ports:
+    - port: 8082
+      targetPort: 8082

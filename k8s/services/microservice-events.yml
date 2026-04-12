@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-events
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-events
+  template:
+    metadata:
+      labels:
+        app: microservice-events
+    spec:
+      containers:
+        - name: microservice-events
+          image: mohamedazizsaid/microservice_events:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORT
+              value: "3000"
+            - name: MONGO_URI
+              value: mongodb://mongo:27017/eventsmicroservice
+            - name: EUREKA_HOST
+              value: eureka
+            - name: EUREKA_PORT
+              value: "8761"
+            - name: SERVICE_HOST
+              value: microservice-events
+            - name: SERVICE_IP
+              value: 127.0.0.1
+          ports:
+            - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice-events
+spec:
+  selector:
+    app: microservice-events
+  ports:
+    - port: 3000
+      targetPort: 3000

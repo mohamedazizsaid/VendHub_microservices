@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservice-reclamation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservice-reclamation
+  template:
+    metadata:
+      labels:
+        app: microservice-reclamation
+    spec:
+      containers:
+        - name: microservice-reclamation
+          image: mohamedazizsaid/microservice_reclamation:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+            - name: USER_SERVICE_URL
+              value: http://microservice-auth:8081/api/auth/users
+          ports:
+            - containerPort: 8084
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservice-reclamation
+spec:
+  selector:
+    app: microservice-reclamation
+  ports:
+    - port: 8084
+      targetPort: 8084

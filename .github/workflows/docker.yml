@@ -1,0 +1,62 @@
+name: Docker Build And Push
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'eureka/**'
+      - 'gateway/**'
+      - 'microservice_authentification/**'
+      - 'microservice_products/**'
+      - 'microservice_Commande/**'
+      - 'microservice_forum/**'
+      - 'microservice_reclamation/**'
+      - 'microservice_events/**'
+      - 'E-Commerce Platform Template/**'
+      - '.github/workflows/docker.yml'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: eureka
+            context: ./eureka
+          - name: gateway
+            context: ./gateway
+          - name: microservice_authentification
+            context: ./microservice_authentification
+          - name: microservice_products
+            context: ./microservice_products
+          - name: microservice_Commande
+            context: ./microservice_Commande
+          - name: microservice_forum
+            context: ./microservice_forum
+          - name: microservice_reclamation
+            context: ./microservice_reclamation
+          - name: microservice_events
+            context: ./microservice_events
+          - name: frontend
+            context: ./E-Commerce Platform Template
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.name }}:latest

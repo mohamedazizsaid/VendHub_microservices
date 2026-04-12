@@ -1,0 +1,207 @@
+version: '3.9'
+
+services:
+  eureka:
+    build: ./eureka
+    container_name: eureka
+    ports:
+      - "8761:8761"
+
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    depends_on:
+      - eureka
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/micro_service_spring
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/micro_service_spring/protocol/openid-connect/certs
+    ports:
+      - "8085:8085"
+
+  microservice_authentification:
+    build: ./microservice_authentification
+    container_name: microservice_authentification
+    depends_on:
+      - mysql
+      - eureka
+      - rabbitmq
+      - keycloak
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/microserviceUser?createDatabaseIfNotExist=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+      SPRING_RABBITMQ_HOST: rabbitmq
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+    ports:
+      - "8081:8081"
+
+  microservice_products:
+    build: ./microservice_products
+    container_name: microservice_products
+    depends_on:
+      - eureka
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+    ports:
+      - "8082:8082"
+
+  microservice_reclamation:
+    build: ./microservice_reclamation
+    container_name: microservice_reclamation
+    depends_on:
+      - eureka
+      - gateway
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+      USER_SERVICE_URL: http://microservice_authentification:8081/api/auth/users
+    ports:
+      - "8084:8084"
+
+  microservice_forum:
+    build: ./microservice_forum
+    container_name: microservice_forum
+    depends_on:
+      - mysql
+      - eureka
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/microserviceForum?createDatabaseIfNotExist=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+      SPRING_RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8087:8087"
+
+  microservice_Commande:
+    build: ./microservice_Commande
+    container_name: microservice_Commande
+    depends_on:
+      - eureka
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka
+    ports:
+      - "8086:8086"
+
+  microservice_events:
+    build: ./microservice_events
+    container_name: microservice_events
+    depends_on:
+      - mongo
+      - eureka
+    environment:
+      PORT: 3000
+      MONGO_URI: mongodb://mongo:27017/eventsmicroservice
+      EUREKA_HOST: eureka
+      EUREKA_PORT: 8761
+      SERVICE_HOST: microservice_events
+      SERVICE_IP: 127.0.0.1
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./E-Commerce Platform Template
+    container_name: frontend
+    depends_on:
+      - gateway
+    ports:
+      - "5173:80"
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    command: start-dev --http-port=8080
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8181:8080"
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    depends_on:
+      - sonarqube_db
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube_db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+
+  sonarqube_db:
+    image: postgres:15
+    container_name: sonarqube_db
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - sonarqube_db:/var/lib/postgresql/data
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  mysql_data:
+  mongo_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+  sonarqube_db:
+  grafana_data:

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: mohamedazizsaid/gateway:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://eureka:8761/eureka
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: http://keycloak:8080/realms/micro_service_spring
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
+              value: http://keycloak:8080/realms/micro_service_spring/protocol/openid-connect/certs
+          ports:
+            - containerPort: 8085
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+spec:
+  selector:
+    app: gateway
+  ports:
+    - port: 8085
+      targetPort: 8085
