@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
@@ -23,6 +24,7 @@ const menuItems = [
   { icon: Package, label: "Products", path: "/admin/products" },
   { icon: ShoppingCart, label: "Orders", path: "/admin/orders" },
   { icon: Calendar, label: "Events", path: "/admin/events" },
+  { icon: MessageSquare, label: "Forums", path: "/admin/forums" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];

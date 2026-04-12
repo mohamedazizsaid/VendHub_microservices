@@ -4,79 +4,130 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Ca
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { forumService, Forum, ForumMessage } from "../../api/forum.service";
+import { authService, getUserFromToken } from "../../api/auth.service";
+import { formatDate } from "../../lib/utils";
+import { toast } from "sonner";
 
 export function ForumDiscussion() {
     const { id } = useParams();
     const [replyText, setReplyText] = useState("");
+    const [forum, setForum] = useState<Forum | null>(null);
+    const [messages, setMessages] = useState<ForumMessage[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isSending, setIsSending] = useState(false);
 
-    // Mock forum data (in a real app, this would come from an API or shared state)
-    const forum = {
-        id: id,
-        title: "Product Feedback",
-        category: "Feedback",
-        description: "Share your thoughts on our latest products and help us improve.",
-        participants: 1245,
-        messagesCount: 5674
-    };
+    const forumId = Number(id || 0);
+    const currentUser = getUserFromToken();
+    const currentUserId = currentUser?.sub ? String(currentUser.sub) : "";
+    const currentUserName = currentUser?.preferred_username || currentUser?.name || "You";
 
-    const [messages, setMessages] = useState([
-        {
-            id: 1,
-            author: "Alex Johnson",
-            role: "Member",
-            avatar: "AJ",
-            content: "I've been using the new wireless headphones for a week now. The noise cancellation is impressive, but I feel the touch controls could be more responsive.",
-            timestamp: "2 hours ago",
-            likes: 12,
-            replies: []
-        },
-        {
-            id: 2,
-            author: "Sarah Smith",
-            role: "Moderator",
-            avatar: "SS",
-            content: "Thanks for the feedback, Alex! We're actually working on a firmware update that should address the touch control sensitivity. Stay tuned!",
-            timestamp: "1 hour ago",
-            likes: 45,
-            replies: [
-                {
-                    id: 3,
-                    author: "Alex Johnson",
-                    content: "That's great news! When can we expect the update?",
-                    timestamp: "45 minutes ago"
-                }
-            ]
-        },
-        {
-            id: 4,
-            author: "Mike Rodriguez",
-            role: "Member",
-            avatar: "MR",
-            content: "Personally, I love the battery life. I managed to get through a whole 12-hour flight and still had 40% battery left. Amazing work guys!",
-            timestamp: "30 minutes ago",
-            likes: 8,
-            replies: []
-        }
-    ]);
+    useEffect(() => {
+        const loadDiscussion = async () => {
+            if (!forumId) {
+                setLoading(false);
+                return;
+            }
 
-    const handleSendReply = () => {
-        if (!replyText.trim()) return;
-
-        const newMessage = {
-            id: messages.length + 1,
-            author: "You",
-            role: "Member",
-            avatar: "ME",
-            content: replyText,
-            timestamp: "Just now",
-            likes: 0,
-            replies: []
+            try {
+                setLoading(true);
+                const [forumData, forumMessages] = await Promise.all([
+                    forumService.getForumById(forumId),
+                    forumService.getForumMessages(forumId),
+                ]);
+                setForum(forumData);
+                setMessages(forumMessages);
+            } catch (error: any) {
+                toast.error(error.message || "Failed to load forum discussion");
+                setForum(null);
+                setMessages([]);
+            } finally {
+                setLoading(false);
+            }
         };
 
-        setMessages([...messages, newMessage]);
-        setReplyText("");
+        loadDiscussion();
+    }, [forumId]);
+
+    const membersCount = useMemo(() => {
+        const ids = new Set(
+            messages
+                .map((message) => Number(message.iduser || message.user?.id || 0))
+                .filter((value) => value > 0),
+        );
+        return ids.size;
+    }, [messages]);
+
+    const resolveNumericUserId = async (): Promise<number | null> => {
+        if (!currentUserId) return null;
+        if (/^\d+$/.test(currentUserId)) {
+            return Number(currentUserId);
+        }
+        try {
+            const profile = await authService.getUser(currentUserId);
+            return typeof profile.id === "number" ? profile.id : null;
+        } catch {
+            return null;
+        }
     };
+
+    const handleSendReply = async () => {
+        if (!replyText.trim()) return;
+        if (!forumId) return;
+
+        if (!currentUserId) {
+            toast.error("Please login to post a message");
+            return;
+        }
+
+        try {
+            setIsSending(true);
+            const numericUserId = await resolveNumericUserId();
+            await forumService.sendMessage(forumId, {
+                content: replyText.trim(),
+                author: currentUserName,
+                iduser: numericUserId || undefined,
+            });
+
+            const refreshed = await forumService.getForumMessages(forumId);
+            setMessages(refreshed);
+            setReplyText("");
+            toast.success("Message posted");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to post message");
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0F3460]/20 py-8 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto">
+                    <Card>
+                        <CardContent className="p-10 text-center text-gray-600 dark:text-gray-400">Loading forum discussion...</CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
+
+    if (!forum) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0F3460]/20 py-8 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto">
+                    <Link to="/forums" className="inline-flex items-center text-[#FF6B35] hover:underline mb-6 group">
+                        <ArrowLeft className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" />
+                        Back to Forums
+                    </Link>
+                    <Card>
+                        <CardContent className="p-10 text-center text-gray-600 dark:text-gray-400">Forum not found.</CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0F3460]/20 py-8 px-4 sm:px-6 lg:px-8">
@@ -98,8 +149,8 @@ export function ForumDiscussion() {
                                 <div>
                                     <div className="flex items-center space-x-3 mb-2">
                                         <h1 className="text-3xl font-bold dark:text-white">{forum.title}</h1>
-                                        <Badge variant="outline" className="text-sm border-[#FF6B35] text-[#FF6B35]">
-                                            {forum.category}
+                                        <Badge variant="outline" className="text-sm border-[#FF6B35] text-[#FF6B35] uppercase">
+                                            Forum
                                         </Badge>
                                     </div>
                                     <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl">
@@ -109,12 +160,12 @@ export function ForumDiscussion() {
                             </div>
                             <div className="flex items-center space-x-6 bg-gray-50 dark:bg-[#0F3460]/40 p-4 rounded-2xl">
                                 <div className="text-center">
-                                    <p className="text-xl font-bold dark:text-white">1.2k</p>
+                                    <p className="text-xl font-bold dark:text-white">{membersCount}</p>
                                     <p className="text-xs text-gray-500 uppercase tracking-wider">Members</p>
                                 </div>
                                 <div className="w-[1px] h-10 bg-gray-200 dark:bg-gray-700"></div>
                                 <div className="text-center">
-                                    <p className="text-xl font-bold dark:text-white">5.6k</p>
+                                    <p className="text-xl font-bold dark:text-white">{messages.length}</p>
                                     <p className="text-xs text-gray-500 uppercase tracking-wider">Messages</p>
                                 </div>
                             </div>
@@ -129,17 +180,25 @@ export function ForumDiscussion() {
                             <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
                                 <CardContent className="p-6">
                                     <div className="flex items-start space-x-4">
-                                        <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg shrink-0">
-                                            {message.avatar}
-                                        </div>
+                                        {message.user?.imageUrl ? (
+                                            <img
+                                                src={message.user.imageUrl}
+                                                alt={message.user.username || message.author || "User"}
+                                                className="w-12 h-12 rounded-full object-cover shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg shrink-0">
+                                                {(message.user?.username || message.author || "U").slice(0, 2).toUpperCase()}
+                                            </div>
+                                        )}
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div className="flex items-center space-x-3">
-                                                    <span className="font-bold text-gray-900 dark:text-white">{message.author}</span>
-                                                    {message.role === "Moderator" && (
+                                                    <span className="font-bold text-gray-900 dark:text-white">{message.user?.username || message.author || "Unknown"}</span>
+                                                    {String(message.user?.role || "").toUpperCase() === "ADMIN" && (
                                                         <Badge variant="success" className="text-[10px] h-5">MODERATOR</Badge>
                                                     )}
-                                                    <span className="text-sm text-gray-500">{message.timestamp}</span>
+                                                    <span className="text-sm text-gray-500">{message.createdAt ? formatDate(message.createdAt) : "Just now"}</span>
                                                 </div>
                                                 <button className="text-gray-400 hover:text-gray-600 transition-colors">
                                                     <MoreHorizontal className="w-5 h-5" />
@@ -151,7 +210,7 @@ export function ForumDiscussion() {
                                             <div className="flex items-center space-x-6">
                                                 <button className="flex items-center space-x-2 text-sm text-gray-500 hover:text-[#FF6B35] transition-colors">
                                                     <ThumbsUp className="w-4 h-4" />
-                                                    <span>{message.likes} Likes</span>
+                                                    <span>Like</span>
                                                 </button>
                                                 <button className="flex items-center space-x-2 text-sm text-gray-500 hover:text-[#FF6B35] transition-colors">
                                                     <MessageCircle className="w-4 h-4" />
@@ -166,26 +225,6 @@ export function ForumDiscussion() {
                                     </div>
                                 </CardContent>
                             </Card>
-
-                            {/* Nested Replies */}
-                            {message.replies.map((reply) => (
-                                <div key={reply.id} className="ml-16">
-                                    <Card className="border-none bg-gray-50/50 dark:bg-[#1A1A2E]/50 shadow-sm">
-                                        <CardContent className="p-4 flex items-start space-x-3">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs shrink-0">
-                                                {reply.author.split(' ').map(n => n[0]).join('')}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-2 mb-1">
-                                                    <span className="font-bold text-sm dark:text-white">{reply.author}</span>
-                                                    <span className="text-[10px] text-gray-500">{reply.timestamp}</span>
-                                                </div>
-                                                <p className="text-gray-600 dark:text-gray-400 text-sm">{reply.content}</p>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            ))}
                         </div>
                     ))}
                 </div>
@@ -203,14 +242,15 @@ export function ForumDiscussion() {
                                     className="pr-20 py-6 rounded-xl border-gray-200 dark:border-gray-800 focus:ring-[#FF6B35] focus:border-[#FF6B35]"
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSendReply()}
+                                    onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center space-x-1">
                                     <Button
                                         onClick={handleSendReply}
+                                        disabled={isSending || !replyText.trim()}
                                         className="h-10 w-10 p-0 rounded-lg bg-[#FF6B35] hover:bg-[#FF6B35]/90"
                                     >
-                                        <Send className="w-5 h-5" />
+                                        {isSending ? <MessageCircle className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                                     </Button>
                                     <Button variant="ghost" className="h-10 w-10 p-0 rounded-lg">
                                         <Flag className="w-5 h-5 text-gray-400" />

@@ -1,9 +1,0 @@
-
-
-GET http://localhost:8087/api/messages/with-users
-
-
-GET http://localhost:8085/api/messages/with-users  401 car non autorise keycloack
-
-
-

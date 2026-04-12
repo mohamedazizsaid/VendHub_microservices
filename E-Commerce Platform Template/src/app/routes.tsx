@@ -32,6 +32,7 @@ import { UserManagement } from "./pages/admin/UserManagement";
 import { ProductManagement } from "./pages/admin/ProductManagement";
 import { OrderManagement } from "./pages/admin/OrderManagement";
 import { EventManagement } from "./pages/admin/EventManagement";
+import { ForumManagement } from "./pages/admin/ForumManagement";
 import { Analytics } from "./pages/admin/Analytics";
 import { Settings } from "./pages/admin/Settings";
 
@@ -51,7 +52,6 @@ export const router = createBrowserRouter([
       { path: "products/:id", Component: ProductDetails },
       { path: "events", Component: EventsList },
       { path: "events/:id", Component: EventDetails },
-      { path: "cart", Component: ShoppingCart },
       {
         element: <ProtectedRoute />,
         children: [
@@ -62,6 +62,8 @@ export const router = createBrowserRouter([
           { path: "orders", Component: OrdersList },
           { path: "orders/:id", Component: OrderTracking },
           { path: "support", Component: Support },
+          { path: "cart", Component: ShoppingCart },
+
         ],
       },
     ],
@@ -78,6 +80,7 @@ export const router = createBrowserRouter([
           { path: "products", Component: ProductManagement },
           { path: "orders", Component: OrderManagement },
           { path: "events", Component: EventManagement },
+          { path: "forums", Component: ForumManagement },
           { path: "analytics", Component: Analytics },
           { path: "settings", Component: Settings },
         ],

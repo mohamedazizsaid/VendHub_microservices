@@ -1,49 +1,89 @@
 import { MessageSquare, Users, MessageCircle, ArrowRight, Search } from "lucide-react";
 import { Link } from "react-router";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
+import { forumService, Forum, ForumMessage } from "../../api/forum.service";
+import { formatDate } from "../../lib/utils";
+import { toast } from "sonner";
 
 export function ForumsList() {
-    const forums = [
-        {
-            id: 1,
-            title: "Product Feedback",
-            description: "Share your thoughts on our latest products and help us improve.",
-            topics: 156,
-            messages: 1240,
-            category: "Feedback",
-            lastActivity: "2 hours ago"
-        },
-        {
-            id: 2,
-            title: "Event Planning",
-            description: "Discuss upcoming events, share ideas, and find travel buddies.",
-            topics: 89,
-            messages: 645,
-            category: "Events",
-            lastActivity: "45 minutes ago"
-        },
-        {
-            id: 3,
-            title: "General Discussion",
-            description: "A place for anything and everything not covered by other forums.",
-            topics: 342,
-            messages: 4521,
-            category: "General",
-            lastActivity: "10 minutes ago"
-        },
-        {
-            id: 4,
-            title: "Support & Help",
-            description: "Need help? Ask our community experts and staff.",
-            topics: 215,
-            messages: 890,
-            category: "Support",
-            lastActivity: "5 minutes ago"
-        }
-    ];
+    const [forums, setForums] = useState<Forum[]>([]);
+    const [messages, setMessages] = useState<ForumMessage[]>([]);
+    const [search, setSearch] = useState("");
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setLoading(true);
+                const [forumsData, messagesData] = await Promise.all([
+                    forumService.getForums(),
+                    forumService.getMessagesWithUsers(),
+                ]);
+                setForums(forumsData);
+                setMessages(messagesData);
+            } catch (error: any) {
+                toast.error(error.message || "Failed to load forums");
+                setForums([]);
+                setMessages([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, []);
+
+    const forumCards = useMemo(() => {
+        return forums.map((forum) => {
+            const forumMessages = messages.filter((msg) => Number(msg.forumId) === Number(forum.id));
+            const membersSet = new Set(
+                forumMessages
+                    .map((msg) => Number(msg.iduser || msg.user?.id || 0))
+                    .filter((value) => value > 0),
+            );
+            const latestMessage = forumMessages
+                .slice()
+                .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0];
+
+            const titleLower = forum.title.toLowerCase();
+            let category = "General";
+            if (titleLower.includes("feedback")) category = "Feedback";
+            else if (titleLower.includes("event")) category = "Events";
+            else if (titleLower.includes("support") || titleLower.includes("help")) category = "Support";
+
+            return {
+                ...forum,
+                topics: forumMessages.length,
+                messages: forumMessages.length,
+                members: membersSet.size,
+                category,
+                lastActivity: latestMessage?.createdAt ? formatDate(latestMessage.createdAt) : "No activity yet",
+            };
+        });
+    }, [forums, messages]);
+
+    const filteredForums = useMemo(() => {
+        const query = search.trim().toLowerCase();
+        if (!query) return forumCards;
+        return forumCards.filter((forum) =>
+            forum.title.toLowerCase().includes(query)
+            || forum.description.toLowerCase().includes(query)
+            || forum.category.toLowerCase().includes(query),
+        );
+    }, [forumCards, search]);
+
+    const totalUsers = useMemo(() => {
+        const ids = new Set(
+            messages
+                .map((msg) => Number(msg.iduser || msg.user?.id || 0))
+                .filter((value) => value > 0),
+        );
+        return ids.size;
+    }, [messages]);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-[#0F3460]/20 py-12 px-4 sm:px-6 lg:px-8">
@@ -62,10 +102,12 @@ export function ForumsList() {
                                 <Input
                                     placeholder="Search forums, topics..."
                                     className="pl-10"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
                                 />
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             </div>
-                            <Button>Search</Button>
+                            <Button onClick={() => setSearch(search.trim())}>Search</Button>
                         </CardContent>
                     </Card>
                     <Card>
@@ -76,7 +118,7 @@ export function ForumsList() {
                                 </div>
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Total Users</p>
-                                    <p className="text-xl font-bold dark:text-white">12,458</p>
+                                    <p className="text-xl font-bold dark:text-white">{totalUsers}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -85,7 +127,19 @@ export function ForumsList() {
 
                 {/* Forums List */}
                 <div className="space-y-6">
-                    {forums.map((forum) => (
+                    {loading ? (
+                        <Card>
+                            <CardContent className="p-10 text-center text-gray-600 dark:text-gray-400">
+                                Loading forums...
+                            </CardContent>
+                        </Card>
+                    ) : filteredForums.length === 0 ? (
+                        <Card>
+                            <CardContent className="p-10 text-center text-gray-600 dark:text-gray-400">
+                                No forums match your search.
+                            </CardContent>
+                        </Card>
+                    ) : filteredForums.map((forum) => (
                         <Link key={forum.id} to={`/forums/${forum.id}`}>
                             <Card className="hover:shadow-lg transition-shadow cursor-pointer group mb-6">
                                 <CardContent className="p-6">

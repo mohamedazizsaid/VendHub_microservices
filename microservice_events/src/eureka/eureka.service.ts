@@ -6,24 +6,31 @@ export class EurekaService implements OnModuleInit, OnModuleDestroy {
   private client: Eureka;
 
   constructor() {
+    const appName = process.env.EUREKA_APP_NAME || 'microservice3';
+    const serviceHost = process.env.SERVICE_HOST || 'localhost';
+    const serviceIp = process.env.SERVICE_IP || '127.0.0.1';
+    const servicePort = Number(process.env.PORT || 3000);
+    const eurekaHost = process.env.EUREKA_HOST || 'localhost';
+    const eurekaPort = Number(process.env.EUREKA_PORT || 8761);
+
     this.client = new Eureka({
       instance: {
-        app: 'microservice3',
-        hostName: 'localhost',
-        ipAddr: '127.0.0.1',
+        app: appName,
+        hostName: serviceHost,
+        ipAddr: serviceIp,
         port: {
-          '$': 3000,
+          '$': servicePort,
           '@enabled': true,
         },
-        vipAddress: 'microservice3',
+        vipAddress: appName,
         dataCenterInfo: {
           '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
           name: 'MyOwn',
         },
       },
       eureka: {
-        host: 'localhost',
-        port: 8761,
+        host: eurekaHost,
+        port: eurekaPort,
         servicePath: '/eureka/apps/',
       },
     });
