@@ -1,0 +1,50 @@
+# Monorepo global ignores (microservices + frontend)
+Database/
+data/
+# IDE/editor
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+logs/
+*.pid
+*.pid.lock
+*.tmp
+*.temp
+*~
+
+# Local embedded databases / traces
+**/*.mv.db
+**/*.trace.db
+
+# Secrets / env files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Java / Spring Boot build outputs
+**/target/
+**/build/
+**/.classpath
+**/.project
+**/.settings/
+**/.apt_generated/
+**/.factorypath
+**/.springBeans
+**/.sts4-cache/
+
+# Node.js / frontend build outputs
+**/node_modules/
+**/dist/
+**/coverage/
+**/.nyc_output/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
