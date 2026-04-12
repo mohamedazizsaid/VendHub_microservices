@@ -5,9 +5,9 @@ import { v2 as cloudinary } from 'cloudinary';
 export class CloudinaryService {
   constructor() {
     cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+      cloud_name: "dhlnfpfen",
+      api_key: "826948159658395",
+      api_secret: "ugHBScB9rskNnKZnk29XC7WOxmY",
       secure: true,
     });
   }

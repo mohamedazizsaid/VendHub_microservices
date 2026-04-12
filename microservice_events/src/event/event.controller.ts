@@ -73,7 +73,7 @@ export class EventController {
         @Param('id') id: string,
         @Param('userId') userId: string,
     ) {
-        return this.eventService.isUserInEvent(id, parseInt(userId));
+        return this.eventService.isUserInEvent(id, userId);
     }
 
     @Post(':id/register/:userId')
@@ -82,7 +82,7 @@ export class EventController {
         @Param('id') id: string,
         @Param('userId') userId: string,
     ) {
-        return this.eventService.register(id, parseInt(userId));
+        return this.eventService.register(id, userId);
     }
 
     @Post(':id/unregister/:userId')
@@ -91,6 +91,6 @@ export class EventController {
         @Param('id') id: string,
         @Param('userId') userId: string,
     ) {
-        return this.eventService.unregister(id, parseInt(userId));
+        return this.eventService.unregister(id, userId);
     }
 }

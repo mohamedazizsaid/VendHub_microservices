@@ -3,11 +3,13 @@ import { apiClient } from './api-client';
 export interface Reclamation {
     id?: number;
     userId: number;
-    productId?: number;
-    subject: string;
+    commandeId?: number;
+    title: string;
     description: string;
+    reply?: string;
     status: string;
     createdAt?: string;
+    updatedAt?: string;
 }
 
 export const reclamationService = {
@@ -23,8 +25,8 @@ export const reclamationService = {
         return apiClient(`/api/reclamations/user/${userId}`);
     },
 
-    getReclamationsByProductId: async (productId: number): Promise<Reclamation[]> => {
-        return apiClient(`/api/reclamations/product/${productId}`);
+    getReclamationsByCommandeId: async (commandeId: number): Promise<Reclamation[]> => {
+        return apiClient(`/api/reclamations/commande/${commandeId}`);
     },
 
     getReclamationsByStatus: async (status: string): Promise<Reclamation[]> => {

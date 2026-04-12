@@ -22,6 +22,22 @@ public class FeedbackServiceImpl implements IFeedbackService {
     @Override
     @Transactional
     public Feedback createFeedback(Feedback feedback) {
+        if (feedback == null) {
+            throw new RuntimeException("Feedback payload is required");
+        }
+
+        if (feedback.getEventId() == null || feedback.getEventId().trim().isEmpty()) {
+            throw new RuntimeException("eventId is required");
+        }
+
+        if (feedback.getUserId() == null) {
+            throw new RuntimeException("userId is required");
+        }
+
+        if (feedback.getRating() == null || feedback.getRating() < 1 || feedback.getRating() > 5) {
+            throw new RuntimeException("rating must be between 1 and 5");
+        }
+
         // Validate event exists via OpenFeign before creating feedback
         if (feedback.getEventId() != null) {
             try {

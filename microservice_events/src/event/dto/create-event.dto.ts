@@ -16,11 +16,11 @@ export class CreateEventDto {
     @IsString()
     image?: string;
 
-    @ApiProperty({ type: [Number], default: [] })
+    @ApiProperty({ type: [String], default: [] })
     @IsOptional()
     @IsArray()
-    @IsNumber({}, { each: true })
-    participant?: number[];
+    @IsString({ each: true })
+    participant?: string[];
 
     @ApiProperty()
     @IsNumber()

@@ -15,8 +15,8 @@ export class Event {
     @Prop()
     image: string;
 
-    @Prop({ type: [Number], default: [] })
-    participant: number[]; // List of long integers (IDs)//user id
+    @Prop({ type: [String], default: [] })
+    participant: string[]; // List of user IDs
 
     @Prop()
     capacity: number;

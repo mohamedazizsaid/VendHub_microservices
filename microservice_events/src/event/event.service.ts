@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Event, EventDocument } from './event.schema';
@@ -46,26 +51,36 @@ export class EventService {
         return result;
     }
 
-    async isUserInEvent(id: string, userId: number): Promise<boolean> {
+    async isUserInEvent(id: string, userId: string): Promise<boolean> {
+        if (!userId || !userId.trim()) {
+            throw new BadRequestException('User ID is required');
+        }
+
+        const normalizedUserId = userId.trim();
         const event = await this.findOne(id);
-        return event.participant.includes(userId);
+        return event.participant.includes(normalizedUserId);
     }
 
-    async register(id: string, userId: number): Promise<Event> {
+    async register(id: string, userId: string): Promise<Event> {
+        if (!userId || !userId.trim()) {
+            throw new BadRequestException('User ID is required');
+        }
+
+        const normalizedUserId = userId.trim();
         const event = await this.findOne(id);
 
-        if (event.participant.includes(userId)) {
+        if (event.participant.includes(normalizedUserId)) {
             return event; // Already registered
         }
 
         if (event.capacity && event.participant.length >= event.capacity) {
-            throw new Error('Event is at full capacity');
+            throw new ConflictException('Event is at full capacity');
         }
 
         return this.eventModel
             .findByIdAndUpdate(
                 id,
-                { $addToSet: { participant: userId } },
+                { $addToSet: { participant: normalizedUserId } },
                 { new: true },
             )
             .exec()
@@ -75,11 +90,16 @@ export class EventService {
             });
     }
 
-    async unregister(id: string, userId: number): Promise<Event> {
+    async unregister(id: string, userId: string): Promise<Event> {
+        if (!userId || !userId.trim()) {
+            throw new BadRequestException('User ID is required');
+        }
+
+        const normalizedUserId = userId.trim();
         return this.eventModel
             .findByIdAndUpdate(
                 id,
-                { $pull: { participant: userId } },
+                { $pull: { participant: normalizedUserId } },
                 { new: true },
             )
             .exec()

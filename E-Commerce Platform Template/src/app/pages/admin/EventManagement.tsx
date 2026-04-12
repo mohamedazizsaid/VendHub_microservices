@@ -1,9 +1,11 @@
-import { Search, Plus, Edit, Trash2, Users, Calendar, MapPin, Info, Save } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Users, Calendar, MapPin, Info, Save, Loader2, Star, MessageSquare, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { eventService, Event } from "../../api/event.service";
+import { feedbackService, Feedback } from "../../api/feedback.service";
+import { authService, User } from "../../api/auth.service";
 import { formatDate } from "../../lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/Dialog";
 import { Input } from "../../components/ui/Input";
@@ -30,6 +32,19 @@ export function EventManagement() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isParticipantsDialogOpen, setIsParticipantsDialogOpen] = useState(false);
+  const [selectedEventForParticipants, setSelectedEventForParticipants] = useState<Event | null>(null);
+  const [participants, setParticipants] = useState<Array<{ id: string; user: User | null }>>([]);
+  const [isParticipantsLoading, setIsParticipantsLoading] = useState(false);
+
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [selectedEventForFeedback, setSelectedEventForFeedback] = useState<Event | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [feedbackUsersById, setFeedbackUsersById] = useState<Record<string, User | null>>({});
+  const [isFeedbackLoading, setIsFeedbackLoading] = useState(false);
+  const [feedbackToDelete, setFeedbackToDelete] = useState<number | null>(null);
+  const [isFeedbackDeleteDialogOpen, setIsFeedbackDeleteDialogOpen] = useState(false);
+  const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -112,6 +127,104 @@ export function EventManagement() {
       toast.error("Failed to upload image");
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  const loadParticipants = async (event: Event) => {
+    const participantIds = Array.isArray(event.participant) ? event.participant.filter(Boolean) : [];
+    setSelectedEventForParticipants(event);
+    setIsParticipantsDialogOpen(true);
+
+    if (participantIds.length === 0) {
+      setParticipants([]);
+      return;
+    }
+
+    try {
+      setIsParticipantsLoading(true);
+      const usersResult = await Promise.allSettled(
+        participantIds.map(async (participantId) => {
+          const user = await authService.getUser(String(participantId));
+          return { id: String(participantId), user };
+        })
+      );
+
+      const mapped = usersResult.map((result, index) => {
+        if (result.status === "fulfilled") {
+          return result.value;
+        }
+        return {
+          id: String(participantIds[index]),
+          user: null,
+        };
+      });
+
+      setParticipants(mapped);
+    } catch (error) {
+      toast.error("Failed to load participants");
+      setParticipants(participantIds.map((id) => ({ id: String(id), user: null })));
+    } finally {
+      setIsParticipantsLoading(false);
+    }
+  };
+
+  const loadFeedbacks = async (event: Event) => {
+    const eventId = event.id || (event as any)._id;
+    if (!eventId) {
+      toast.error("Event ID not found");
+      return;
+    }
+
+    setSelectedEventForFeedback(event);
+    setIsFeedbackDialogOpen(true);
+
+    try {
+      setIsFeedbackLoading(true);
+      const data = await feedbackService.getFeedbacksByEventId(String(eventId));
+      setFeedbacks(data);
+
+      const uniqueUserIds = Array.from(new Set(data.map((entry) => String(entry.userId)).filter(Boolean)));
+      if (uniqueUserIds.length === 0) {
+        setFeedbackUsersById({});
+        return;
+      }
+      const usersMap: Record<string, User | null> = {};
+
+      // Feedback stores numeric user IDs; use the paginated users endpoint for reliable resolution.
+      const usersPage = await authService.getUsers({ page: 0, size: 1000, search: "", role: "ALL", status: "ALL" });
+      const usersByNumericId: Record<string, User> = {};
+      (usersPage.content || []).forEach((user) => {
+        usersByNumericId[String(user.id)] = user;
+      });
+
+      uniqueUserIds.forEach((userId) => {
+        usersMap[userId] = usersByNumericId[userId] || null;
+      });
+
+      setFeedbackUsersById(usersMap);
+    } catch (error) {
+      toast.error("Failed to load feedbacks");
+      setFeedbacks([]);
+      setFeedbackUsersById({});
+    } finally {
+      setIsFeedbackLoading(false);
+    }
+  };
+
+  const confirmDeleteFeedback = async () => {
+    if (!feedbackToDelete || !selectedEventForFeedback) return;
+
+    try {
+      setIsDeletingFeedback(true);
+      await feedbackService.deleteFeedback(feedbackToDelete);
+      setFeedbacks((prev) => prev.filter((feedback) => feedback.id !== feedbackToDelete));
+      toast.success("Feedback deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete feedback");
+    } finally {
+      setIsDeletingFeedback(false);
+      setIsFeedbackDeleteDialogOpen(false);
+      setFeedbackToDelete(null);
     }
   };
 
@@ -324,9 +437,19 @@ export function EventManagement() {
                           variant="secondary"
                           size="sm"
                           className="flex-1 md:flex-none"
+                          onClick={() => loadParticipants(event)}
                         >
                           <Users className="w-4 h-4 mr-2" />
                           View Participants
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 md:flex-none border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                          onClick={() => loadFeedbacks(event)}
+                        >
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Feedback
                         </Button>
                       </div>
                     </div>
@@ -366,6 +489,170 @@ export function EventManagement() {
               className="bg-red-600 hover:bg-red-700 text-white border-none"
             >
               Delete Event
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={isParticipantsDialogOpen} onOpenChange={setIsParticipantsDialogOpen}>
+        <DialogContent className="sm:max-w-[680px] bg-white dark:bg-[#1B1B2F] border-gray-200 dark:border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+              Participants {selectedEventForParticipants ? `- ${selectedEventForParticipants.name}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isParticipantsLoading ? (
+            <div className="py-12 flex items-center justify-center text-gray-600 dark:text-gray-300 gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Loading participants...
+            </div>
+          ) : participants.length === 0 ? (
+            <div className="py-12 text-center text-gray-600 dark:text-gray-300">
+              <Users className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+              No participants registered yet.
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
+              {participants.map((entry) => {
+                const fullName = entry.user
+                  ? `${entry.user.firstName || ""} ${entry.user.lastName || ""}`.trim() || entry.user.username
+                  : "Unknown user";
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/70 dark:bg-[#16213E]/70"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {entry.user?.imageUrl ? (
+                        <img
+                          src={entry.user.imageUrl}
+                          alt={fullName}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#FF6B35]/15 text-[#FF6B35] flex items-center justify-center">
+                          <UserCircle2 className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{fullName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {entry.user?.email || `User ID: ${entry.id}`}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="success">Registered</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
+        <DialogContent className="sm:max-w-[720px] bg-white dark:bg-[#1B1B2F] border-gray-200 dark:border-gray-800">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+              Feedbacks {selectedEventForFeedback ? `- ${selectedEventForFeedback.name}` : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          {isFeedbackLoading ? (
+            <div className="py-12 flex items-center justify-center text-gray-600 dark:text-gray-300 gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Loading feedbacks...
+            </div>
+          ) : feedbacks.length === 0 ? (
+            <div className="py-12 text-center text-gray-600 dark:text-gray-300">
+              <MessageSquare className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+              No feedbacks for this event.
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[430px] overflow-auto pr-1">
+              {feedbacks.map((feedback) => (
+                <div
+                  key={feedback.id}
+                  className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gray-50/70 dark:bg-[#16213E]/70"
+                >
+                  {(() => {
+                    const user = feedbackUsersById[String(feedback.userId)] || null;
+                    const fullName = user
+                      ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username
+                      : `User #${feedback.userId}`;
+
+                    return (
+                      <>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {user?.imageUrl ? (
+                        <img
+                          src={user.imageUrl}
+                          alt={fullName}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#FF6B35]/15 text-[#FF6B35] flex items-center justify-center">
+                          <UserCircle2 className="w-5 h-5" />
+                        </div>
+                      )}
+                      <div>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{fullName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {feedback.createdAt ? formatDate(feedback.createdAt) : "No date"}
+                      </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                        <Star className="w-3.5 h-3.5" />
+                        {feedback.rating}/5
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => {
+                          setFeedbackToDelete(feedback.id);
+                          setIsFeedbackDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{feedback.comment || "No comment"}</p>
+                      </>
+                    );
+                  })()}
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={isFeedbackDeleteDialogOpen} onOpenChange={setIsFeedbackDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white dark:bg-[#1B1B2F] border-gray-200 dark:border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Delete this feedback?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+              This action is permanent. The feedback will be removed from this event.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteFeedback}
+              className="bg-red-600 hover:bg-red-700 text-white border-none"
+              disabled={isDeletingFeedback}
+            >
+              {isDeletingFeedback ? "Deleting..." : "Delete Feedback"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

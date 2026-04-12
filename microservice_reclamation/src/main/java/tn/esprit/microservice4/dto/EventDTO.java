@@ -17,7 +17,7 @@ public class EventDTO {
     private String name;
     private String description;
     private String image;
-    private List<Long> participant;
+    private List<String> participant;
     private Integer capacity;
     private String location;
     private String date;

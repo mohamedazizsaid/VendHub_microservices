@@ -1,10 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { Package, Truck, CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { Package, Truck, CheckCircle, Loader2, AlertCircle, MessageSquareWarning } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Textarea } from "../../components/ui/Textarea";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { Commande, orderService } from "../../api/order.service";
+import { Reclamation, reclamationService } from "../../api/reclamation.service";
+import { authService, getUserFromToken } from "../../api/auth.service";
+import { toast } from "sonner";
 
 const STATUS_FLOW = ["processing", "in_transit", "delivered"] as const;
 
@@ -22,6 +28,15 @@ export function OrderTracking() {
   const [order, setOrder] = useState<Commande | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [resolvedUserId, setResolvedUserId] = useState<number | null>(null);
+  const [myReclamation, setMyReclamation] = useState<Reclamation | null>(null);
+  const [reclamationTitle, setReclamationTitle] = useState("");
+  const [reclamationDescription, setReclamationDescription] = useState("");
+  const [isReclamationLoading, setIsReclamationLoading] = useState(false);
+  const [isReclamationSaving, setIsReclamationSaving] = useState(false);
+
+  const currentUser = getUserFromToken();
+  const currentUserId = currentUser?.sub ? String(currentUser.sub) : "";
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -43,6 +58,115 @@ export function OrderTracking() {
 
     loadOrder();
   }, [id]);
+
+  const resolveNumericUserId = async (): Promise<number | null> => {
+    if (!currentUserId) return null;
+
+    if (/^\d+$/.test(currentUserId)) {
+      return Number(currentUserId);
+    }
+
+    try {
+      const user = await authService.getUser(currentUserId);
+      return typeof user?.id === "number" ? user.id : null;
+    } catch {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const loadMyReclamation = async () => {
+      if (!order?.id) return;
+
+      if (!currentUserId) {
+        setResolvedUserId(null);
+        setMyReclamation(null);
+        setReclamationTitle("");
+        setReclamationDescription("");
+        return;
+      }
+
+      try {
+        setIsReclamationLoading(true);
+        const numericUserId = await resolveNumericUserId();
+        setResolvedUserId(numericUserId);
+
+        if (!numericUserId) {
+          setMyReclamation(null);
+          setReclamationTitle("");
+          setReclamationDescription("");
+          return;
+        }
+
+        const allForOrder = await reclamationService.getReclamationsByCommandeId(order.id);
+        const mine = allForOrder
+          .filter((entry) => Number(entry.userId) === numericUserId)
+          .sort((a, b) => {
+            const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+            const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+            return dateB - dateA;
+          })[0] || null;
+
+        setMyReclamation(mine);
+        setReclamationTitle(mine?.title || "");
+        setReclamationDescription(mine?.description || "");
+      } catch {
+        setMyReclamation(null);
+        setReclamationTitle("");
+        setReclamationDescription("");
+      } finally {
+        setIsReclamationLoading(false);
+      }
+    };
+
+    loadMyReclamation();
+  }, [order?.id, currentUserId]);
+
+  const saveReclamation = async () => {
+    if (!order?.id) return;
+
+    if (!currentUserId) {
+      toast.error("Please login to submit a reclamation");
+      return;
+    }
+
+    if (!resolvedUserId) {
+      toast.error("Unable to resolve your profile for reclamation");
+      return;
+    }
+
+    if (!reclamationTitle.trim() || !reclamationDescription.trim()) {
+      toast.error("Please provide both title and description");
+      return;
+    }
+
+    try {
+      setIsReclamationSaving(true);
+
+      if (myReclamation?.id) {
+        const updated = await reclamationService.updateReclamation(myReclamation.id, {
+          title: reclamationTitle.trim(),
+          description: reclamationDescription.trim(),
+        });
+        setMyReclamation({ ...myReclamation, ...updated });
+        toast.success("Reclamation updated successfully");
+      } else {
+        const created = await reclamationService.createReclamation({
+          userId: resolvedUserId,
+          commandeId: order.id,
+          title: reclamationTitle.trim(),
+          description: reclamationDescription.trim(),
+          status: "OPEN",
+        });
+        setMyReclamation(created);
+        toast.success("Reclamation submitted successfully");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save reclamation");
+    } finally {
+      setIsReclamationSaving(false);
+    }
+  };
 
   const status = normalizeStatus(order?.status);
 
@@ -186,6 +310,93 @@ export function OrderTracking() {
                 <p className="text-gray-900 dark:text-white">{order.clientPhone || "Not provided"}</p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquareWarning className="w-5 h-5 text-[#FF6B35]" />
+                Reclamation Support
+              </CardTitle>
+              {myReclamation?.status ? (
+                <Badge
+                  variant={
+                    ["RESOLVED", "CLOSED"].includes(myReclamation.status.toUpperCase())
+                      ? "success"
+                      : myReclamation.status.toUpperCase() === "IN_PROGRESS"
+                        ? "info"
+                        : "warning"
+                  }
+                >
+                  {myReclamation.status.replace("_", " ")}
+                </Badge>
+              ) : null}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isReclamationLoading ? (
+              <div className="py-8 text-gray-600 dark:text-gray-400 inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading your reclamation...
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Need help with this order? Submit a reclamation and update it anytime until support resolves it.
+                </p>
+
+                <div className="grid gap-2">
+                  <label className="text-sm text-gray-700 dark:text-gray-300">Title</label>
+                  <Input
+                    value={reclamationTitle}
+                    onChange={(e) => setReclamationTitle(e.target.value)}
+                    placeholder="Example: Damaged package or missing item"
+                    disabled={isReclamationSaving}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <label className="text-sm text-gray-700 dark:text-gray-300">Description</label>
+                  <Textarea
+                    rows={4}
+                    value={reclamationDescription}
+                    onChange={(e) => setReclamationDescription(e.target.value)}
+                    placeholder="Describe your issue with clear details..."
+                    disabled={isReclamationSaving}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {myReclamation?.updatedAt
+                      ? `Last updated: ${formatDate(myReclamation.updatedAt)}`
+                      : myReclamation?.createdAt
+                        ? `Submitted: ${formatDate(myReclamation.createdAt)}`
+                        : "No reclamation submitted yet"}
+                  </p>
+                  <Button
+                    onClick={saveReclamation}
+                    disabled={isReclamationSaving || !reclamationTitle.trim() || !reclamationDescription.trim()}
+                    className="bg-[#FF6B35] hover:bg-[#e85a24] text-white"
+                  >
+                    {isReclamationSaving
+                      ? "Saving..."
+                      : myReclamation?.id
+                        ? "Update My Reclamation"
+                        : "Submit Reclamation"}
+                  </Button>
+                </div>
+
+                {myReclamation?.reply ? (
+                  <div className="rounded-lg p-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1F4068]">
+                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">Support Reply</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{myReclamation.reply}</p>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </CardContent>
         </Card>
 
