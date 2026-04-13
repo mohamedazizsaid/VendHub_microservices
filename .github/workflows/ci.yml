@@ -50,7 +50,7 @@ jobs:
               -Dsonar.projectName=${{ matrix.service }} \
               -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
               -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-              -Dsonar.organization=VendHub_microservices\
+              -Dsonar.organization=mohamedazisaid\
 
               -DskipTests
           else
