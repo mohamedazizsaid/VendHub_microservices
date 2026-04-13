@@ -51,3 +51,5 @@ jobs:
           context: ${{ matrix.context }}
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.name }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
