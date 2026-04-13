@@ -37,18 +37,23 @@ jobs:
         run: mvn -B -DskipTests clean verify
 
       - name: SonarQube Analysis ${{ matrix.service }}
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        # Le if a été supprimé car secrets n'est pas disponible ici
         working-directory: ${{ matrix.service }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          mvn -B sonar:sonar \
-            -Dsonar.projectKey=${{ matrix.service }} \
-            -Dsonar.projectName=${{ matrix.service }} \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            -DskipTests
+          # On vérifie si le token existe avant d'exécuter SonarQube
+          if [ -n "$SONAR_TOKEN" ]; then
+            mvn -B sonar:sonar \
+              -Dsonar.projectKey=${{ matrix.service }} \
+              -Dsonar.projectName=${{ matrix.service }} \
+              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+              -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+              -DskipTests
+          else
+            echo "SONAR_TOKEN non configuré, analyse SonarQube ignorée"
+          fi
 
   node-build:
     name: Node Services Build
