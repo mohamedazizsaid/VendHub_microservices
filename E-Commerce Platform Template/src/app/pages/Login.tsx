@@ -1,10 +1,10 @@
 import { Link, useNavigate } from "react-router";
 import { Lock, Chrome, Facebook, Loader2, ScanFace } from "lucide-react";
 import { FaceIdModal } from "../components/auth/FaceIdModal";
-import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
-import { Card, CardContent } from "../components/ui/Card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/Dialog";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { useState, useEffect } from "react";
 import { authService, getUserFromToken } from "../api/auth.service";
 import { toast } from "sonner";

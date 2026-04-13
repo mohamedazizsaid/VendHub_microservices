@@ -75,9 +75,9 @@ services:
     ports:
       - "8087:8087"
 
-  microservice_Commande:
+  microservice_commande:
     build: ./microservice_Commande
-    container_name: microservice_Commande
+    container_name: microservice_commande
     depends_on:
       - eureka
     environment:
@@ -102,7 +102,9 @@ services:
       - "3000:3000"
 
   frontend:
-    build: ./E-Commerce Platform Template
+    build:
+      context: "./E-Commerce Platform Template"
+      dockerfile: Dockerfile
     container_name: frontend
     depends_on:
       - gateway

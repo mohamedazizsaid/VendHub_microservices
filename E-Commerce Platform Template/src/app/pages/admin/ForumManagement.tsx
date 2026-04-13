@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, Edit, Trash2, MessageSquare, Loader2, UserCircle2 } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/Dialog";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,8 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { Input } from "../../components/ui/Input";
-import { Textarea } from "../../components/ui/Textarea";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import { forumService, Forum, ForumMessage } from "../../api/forum.service";
 import { formatDate } from "../../lib/utils";
 import { toast } from "sonner";

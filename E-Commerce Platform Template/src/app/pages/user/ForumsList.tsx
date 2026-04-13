@@ -1,13 +1,13 @@
 import { MessageSquare, Users, MessageCircle, ArrowRight, Search } from "lucide-react";
 import { Link } from "react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "../../components/ui/Button";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
-import { Input } from "../../components/ui/Input";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
 import { forumService, Forum, ForumMessage } from "../../api/forum.service";
 import { formatDate } from "../../lib/utils";
 import { toast } from "sonner";
+import { Button } from "../../components/ui/button";
 
 export function ForumsList() {
     const [forums, setForums] = useState<Forum[]>([]);

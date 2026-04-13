@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { Heart, ArrowRight, Trash2, Grid } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { formatCurrency } from "../../lib/utils";
 import { productService, Product } from "../../api/product.service";
 import { toast } from "sonner";

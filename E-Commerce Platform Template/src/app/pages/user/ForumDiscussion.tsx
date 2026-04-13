@@ -1,9 +1,9 @@
 import { useParams, Link } from "react-router";
 import { MessageSquare, ArrowLeft, Send, MoreHorizontal, ThumbsUp, MessageCircle, Share2, Flag } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
-import { Input } from "../../components/ui/Input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
+import { Input } from "../../components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import { forumService, Forum, ForumMessage } from "../../api/forum.service";
 import { authService, getUserFromToken } from "../../api/auth.service";

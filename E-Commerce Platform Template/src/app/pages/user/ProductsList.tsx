@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
 import { Grid, List, Star, Filter, Search } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Badge } from "../../components/ui/badge";
 import { formatCurrency } from "../../lib/utils";
 import { productService, Product } from "../../api/product.service";
 import { useProductInteraction } from "../../hooks/useProductInteraction";

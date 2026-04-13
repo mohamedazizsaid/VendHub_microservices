@@ -1,5 +1,5 @@
 import { Users, Target, Award, TrendingUp } from "lucide-react";
-import { Card, CardContent } from "../components/ui/Card";
+import { Card, CardContent } from "../components/ui/card";
 import { teamMembers } from "../data/mockData";
 
 export function About() {

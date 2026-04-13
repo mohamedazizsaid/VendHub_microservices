@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { ArrowRight, TrendingUp, Calendar, Shield, Zap, Star, Sparkles } from "lucide-react";
-import { Button } from "../components/ui/Button";
-import { Card, CardContent } from "../components/ui/Card";
-import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { mockProducts, mockEvents, categories, testimonials } from "../data/mockData";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { recommendationService } from "../api/recommendation.service";

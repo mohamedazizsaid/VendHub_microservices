@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Camera, Loader2, Upload, ChevronRight } from "lucide-react";
-import { Button } from "../components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { authService } from "../api/auth.service";
 import { toast } from "sonner";
 

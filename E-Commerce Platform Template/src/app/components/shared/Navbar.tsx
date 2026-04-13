@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router";
 import { ShoppingCart, User, Search, Menu, Moon, Sun, LogOut, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { toast } from "sonner";
 import { authService, getUserFromToken } from "../../api/auth.service";
 import { productService } from "../../api/product.service";

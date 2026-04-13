@@ -1,8 +1,8 @@
 import { Link, useNavigate } from "react-router";
 import { Chrome, Facebook, Loader2 } from "lucide-react";
-import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
-import { Card, CardContent } from "../components/ui/Card";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
 import { useState } from "react";
 import { authService } from "../api/auth.service";
 import { toast } from "sonner";

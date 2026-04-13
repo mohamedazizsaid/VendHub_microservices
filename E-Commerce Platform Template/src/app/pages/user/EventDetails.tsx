@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router";
 import { Calendar, MapPin, Users, Clock, Heart, Loader2, MessageSquare, Star } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { eventService, Event } from "../../api/event.service";
 import { authService, getUserFromToken } from "../../api/auth.service";
 import { feedbackService } from "../../api/feedback.service";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
-import { Textarea } from "../../components/ui/Textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Textarea } from "../../components/ui/textarea";
 
 interface TicketOption {
   type: string;

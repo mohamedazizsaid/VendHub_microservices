@@ -1,4 +1,4 @@
-import { Button } from "../ui/Button";
+import { Button } from "../ui/button";
 import { ADMIN_DATE_RANGE_OPTIONS, AdminDateRange } from "../../lib/admin-date-range";
 
 interface AdminDateRangeFilterProps {

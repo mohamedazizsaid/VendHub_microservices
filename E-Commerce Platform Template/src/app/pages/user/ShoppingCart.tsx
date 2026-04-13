@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Sparkles, CreditCard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
 import { formatCurrency } from "../../lib/utils";
 import { cartStore, CartItem } from "../../lib/cart";
 import { toast } from "sonner";

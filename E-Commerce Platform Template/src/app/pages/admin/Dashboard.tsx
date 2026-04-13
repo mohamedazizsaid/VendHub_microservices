@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { DollarSign, ShoppingCart, Users, Package, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
 import { formatCurrency, formatNumber } from "../../lib/utils";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Commande, orderService } from "../../api/order.service";

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { Package, Truck, CheckCircle, Loader2, AlertCircle, MessageSquareWarning } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Badge } from "../../components/ui/Badge";
-import { Button } from "../../components/ui/Button";
-import { Input } from "../../components/ui/Input";
-import { Textarea } from "../../components/ui/Textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { Commande, orderService } from "../../api/order.service";
 import { Reclamation, reclamationService } from "../../api/reclamation.service";

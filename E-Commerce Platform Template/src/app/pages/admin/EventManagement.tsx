@@ -1,16 +1,16 @@
 import { Search, Plus, Edit, Trash2, Users, Calendar, MapPin, Info, Save, Loader2, Star, MessageSquare, UserCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { eventService, Event } from "../../api/event.service";
 import { feedbackService, Feedback } from "../../api/feedback.service";
 import { authService, User } from "../../api/auth.service";
 import { formatDate } from "../../lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/Dialog";
-import { Input } from "../../components/ui/Input";
-import { Label } from "../../components/ui/Label";
-import { Textarea } from "../../components/ui/Textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,

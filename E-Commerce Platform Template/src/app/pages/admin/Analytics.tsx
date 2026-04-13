@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TrendingUp, Download, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import { formatCurrency, formatNumber } from "../../lib/utils";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Commande, orderService } from "../../api/order.service";

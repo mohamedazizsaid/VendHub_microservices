@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, Edit, Trash2, Ban, Eye, Save } from "lucide-react";
-import { Card, CardContent } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { authService, User } from "../../api/auth.service";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
-import { Input } from "../../components/ui/Input";
-import { Label } from "../../components/ui/Label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,

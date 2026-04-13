@@ -1,8 +1,8 @@
 import { Link } from "react-router";
 import { Package, Calendar, ShoppingBag, Heart, Bell, Settings as SettingsIcon, Shield, Loader2, Camera } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Badge } from "../../components/ui/badge";
 import { mockEvents } from "../../data/mockData";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { useState, useEffect, useRef } from "react";
@@ -10,7 +10,7 @@ import { authService, getUserFromToken } from "../../api/auth.service";
 import { recommendationService, InteractionStats } from "../../api/recommendation.service";
 import { Product, productService } from "../../api/product.service";
 import { Commande, orderService } from "../../api/order.service";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/Dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../components/ui/dialog";
 import { Switch } from "../../components/ui/switch";
 import { toast } from "sonner";
 
