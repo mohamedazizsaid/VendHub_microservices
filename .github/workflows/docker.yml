@@ -1,16 +1,15 @@
 name: Docker Build And Push
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [ "main", "master" ]
+  push:
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
