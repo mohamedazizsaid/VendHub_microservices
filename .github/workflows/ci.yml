@@ -36,6 +36,20 @@ jobs:
         working-directory: ${{ matrix.service }}
         run: mvn -B -DskipTests clean verify
 
+      - name: SonarQube Analysis ${{ matrix.service }}
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        working-directory: ${{ matrix.service }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=${{ matrix.service }} \
+            -Dsonar.projectName=${{ matrix.service }} \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -DskipTests
+
   node-build:
     name: Node Services Build
     runs-on: ubuntu-latest
@@ -61,5 +75,3 @@ jobs:
       - name: Build ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
         run: npm run build
-
-
