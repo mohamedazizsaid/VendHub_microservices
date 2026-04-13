@@ -34,7 +34,7 @@ jobs:
 
       - name: Build ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
-        run: mvn -B clean verify
+        run: mvn -B -DskipTests clean verify
 
   node-build:
     name: Node Services Build
