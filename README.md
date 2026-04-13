@@ -17,7 +17,7 @@ This repository contains:
 
 Main runtime components:
 - `eureka` (service discovery)
-- `gateway` (API Gateway + JWT resource server)
+- `gateway` (API Gateway + Keyloack resource server)
 - `microservice_authentification`
 - `microservice_products`
 - `microservice_Commande`
