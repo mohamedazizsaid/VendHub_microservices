@@ -32,7 +32,7 @@ jobs:
           - name: microservice_events
             context: ./microservice_events
           - name: frontend
-            context: ./E-Commerce Platform Template
+            context: "./E-Commerce Platform Template"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
