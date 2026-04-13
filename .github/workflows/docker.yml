@@ -1,24 +1,16 @@
 name: Docker Build And Push
 
 on:
-  workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [ "main", "master" ]
-    paths:
-      - 'eureka/**'
-      - 'gateway/**'
-      - 'microservice_authentification/**'
-      - 'microservice_products/**'
-      - 'microservice_Commande/**'
-      - 'microservice_forum/**'
-      - 'microservice_reclamation/**'
-      - 'microservice_events/**'
-      - 'E-Commerce Platform Template/**'
-      - '.github/workflows/docker.yml'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
