@@ -23,7 +23,7 @@ jobs:
             context: ./microservice_authentification
           - name: microservice_products
             context: ./microservice_products
-          - name: microservice_Commande
+          - name: microservice_commande
             context: ./microservice_Commande
           - name: microservice_forum
             context: ./microservice_forum
