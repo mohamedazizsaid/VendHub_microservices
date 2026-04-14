@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master","azizsaid" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master","azizsaid" ]
 
 jobs:
   java-build:
