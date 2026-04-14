@@ -4,7 +4,6 @@ import { ArrowRight, TrendingUp, Calendar, Shield, Zap, Star, Sparkles } from "l
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { mockProducts, mockEvents, categories, testimonials } from "../data/mockData";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { recommendationService } from "../api/recommendation.service";
 import { Product } from "../api/product.service";
@@ -12,6 +11,46 @@ import { getUserFromToken } from "../api/auth.service";
 import { useProductInteraction } from "../hooks/useProductInteraction";
 
 export function Home() {
+
+  const testimonials = [
+    {
+      id: 1,
+      name: "Emily R.",
+      role: "Verified Buyer",
+      text: "EventShop has completely transformed the way I shop and attend events. The personalized recommendations are spot on, and the seamless checkout process makes everything so easy!",
+      image: "https://randomuser.me/api/portraits/women/68.jpg",
+      rating: 5,
+    },];
+  const mockProducts = [
+    {
+      id: 1,
+      name: "Wireless Headphones",
+      category: "Electronics",
+      price: 99.99,
+      originalPrice: 149.99,
+      rating: 4.5,
+      reviews: 120,
+      inStock: true,
+      image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600",
+    }
+  ]; // Replace with actual product data
+  const mockEvents = [
+    {
+      id: 1,
+      title: "Summer Music Festival",
+      category: "Music",
+      date: "2024-08-15T19:00:00Z",
+      location: "Central Park, NYC",
+      price: 49.99,
+      attendees: 500,
+      featured: true,
+      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600",
+    }
+  ]; // Replace with actual event data
+  const categories = [
+    { id: "electronics", name: "Electronics", count: 120 },
+    { id: "fashion", name: "Fashion", count: 80 },];
+  
   const featuredProducts = mockProducts.slice(0, 4);
   const featuredEvents = mockEvents.filter((e) => e.featured);
   const [popularProducts, setPopularProducts] = useState<Product[]>([]);

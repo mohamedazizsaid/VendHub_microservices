@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .pathMatchers("/actuator/**").permitAll()
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/messages/**").permitAll()
                         .pathMatchers("/api/forums/**").permitAll()
@@ -47,6 +48,7 @@ public class SecurityConfig {
                         .pathMatchers("/api/feedbacks/**").permitAll()
                         .pathMatchers("/api6/commandes/**").permitAll()
                         .pathMatchers("/eureka/**").permitAll()
+
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakJwtAuthenticationConverter()))

@@ -1,6 +1,5 @@
 # Monorepo global ignores (microservices + frontend)
 Database/
-data/
 # IDE/editor
 .idea/
 .vscode/

@@ -46,3 +46,6 @@ On push/PR to `main`/`master`, `ci.yml` runs:
 `k8s-deploy.yml` is `workflow_dispatch` and targets a self-hosted runner with `kubectl` + `minikube` context.
 
 Detailed minikube deployment steps: `k8s/README.md`
+
+---
+**Last Updated**: Pipeline stable - all services building successfully ✅

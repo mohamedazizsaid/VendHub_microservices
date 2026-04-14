@@ -1,6 +1,5 @@
 import { Users, Target, Award, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
-import { teamMembers } from "../data/mockData";
 
 export function About() {
   const stats = [
@@ -8,6 +7,23 @@ export function About() {
     { label: "Products Sold", value: "500K+", icon: TrendingUp },
     { label: "Happy Customers", value: "50K+", icon: Users },
     { label: "Events Hosted", value: "1K+", icon: Target },
+  ];
+
+  const teamMembers = [
+    {
+      id: 1,
+      name: "Alice Johnson",
+      role: "Founder & CEO",
+      bio: "Alice is a visionary entrepreneur with a passion for e-commerce and event management. With over 15 years of experience in the industry, she founded EventShop to create a seamless shopping and event experience for customers worldwide.",
+      image: "https://randomuser.me/api/portraits/women/44.jpg",
+    },
+    {
+      id: 2,
+      name: "Bob Smith",
+      role: "Chief Technology Officer",
+      bio: "Bob is a tech enthusiast and software architect with a background in building scalable e-commerce platforms. He leads the development team at EventShop, ensuring that our technology is cutting-edge and reliable.",
+      image: "https://randomuser.me/api/portraits/men/32.jpg",
+    },
   ];
 
   return (
