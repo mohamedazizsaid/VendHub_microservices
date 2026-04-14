@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
-import { mockTickets } from "../../data/mockData";
 import { formatDate } from "../../lib/utils";
 
 export function Support() {
@@ -15,6 +14,27 @@ export function Support() {
     priority: "medium",
     description: "",
   });
+
+  const mockTickets = [
+    {
+      id: 1,
+      title: "Order not received",
+      category: "delivery",
+      priority: "high",
+      description: "I haven't received my order despite the tracking showing it as delivered.",
+      status: "open",
+      createdAt: new Date("2023-05-15"),
+    },
+    {
+      id: 2,
+      title: "Refund request",
+      category: "refund",
+      priority: "medium",
+      description: "I would like to request a refund for the damaged item I received.",
+      status: "in_progress",
+      createdAt: new Date("2023-05-10"),
+    },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,7 +174,6 @@ export function Support() {
                       <span>•</span>
                       <span>{ticket.category}</span>
                       <span>•</span>
-                      <span>{formatDate(ticket.date)}</span>
                     </div>
                   </div>
                   <MessageSquare className="w-5 h-5 text-gray-400" />
