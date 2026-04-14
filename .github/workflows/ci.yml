@@ -7,6 +7,9 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
+  # ─────────────────────────────────────────
+  # BUILD JAVA SERVICES
+  # ─────────────────────────────────────────
   java-build:
     name: Java Services Build
     runs-on: ubuntu-latest
@@ -36,8 +39,9 @@ jobs:
         working-directory: ${{ matrix.service }}
         run: mvn -B -DskipTests clean verify
 
-
-
+  # ─────────────────────────────────────────
+  # BUILD NODE SERVICES
+  # ─────────────────────────────────────────
   node-build:
     name: Node Services Build
     runs-on: ubuntu-latest
@@ -46,7 +50,7 @@ jobs:
       matrix:
         service:
           - microservice_events
-          - E-Commerce Platform Template
+          - "E-Commerce Platform Template"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,3 +67,82 @@ jobs:
       - name: Build ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
         run: npm run build
+
+  # ─────────────────────────────────────────
+  # SONARQUBE ANALYSIS (JAVA SERVICES)
+  # ─────────────────────────────────────────
+  sonar-java:
+    name: SonarQube Analysis - ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: java-build
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - eureka
+          - gateway
+          - microservice_authentification
+          - microservice_products
+          - microservice_Commande
+          - microservice_forum
+          - microservice_reclamation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # nécessaire pour SonarQube (blame, historique)
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build with tests + coverage
+        working-directory: ${{ matrix.service }}
+        run: mvn -B clean verify
+
+      - name: SonarQube Scan - ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=${{ matrix.service }} \
+            -Dsonar.projectName="${{ matrix.service }}" \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.java.coveragePlugin=jacoco \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+  # ─────────────────────────────────────────
+  # SONARQUBE ANALYSIS (NODE SERVICES)
+  # ─────────────────────────────────────────
+  sonar-node:
+    name: SonarQube Analysis - ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: node-build
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - microservice_events
+          - "E-Commerce Platform Template"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan - ${{ matrix.service }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        with:
+          projectBaseDir: ${{ matrix.service }}
+          args: >
+            -Dsonar.projectKey=${{ matrix.service }}
+            -Dsonar.projectName="${{ matrix.service }}"
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
