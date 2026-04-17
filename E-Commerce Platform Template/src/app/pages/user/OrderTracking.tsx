@@ -389,11 +389,36 @@ export function OrderTracking() {
                   </Button>
                 </div>
 
-                {myReclamation?.reply ? (
-                  <div className="rounded-lg p-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1F4068]">
-                    <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">Support Reply</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{myReclamation.reply}</p>
-                  </div>
+                {myReclamation ? (
+                  myReclamation.reply ? (
+                    <div className="mt-6 rounded-xl p-5 border-2 border-green-200 dark:border-green-900/30 bg-green-50/50 dark:bg-green-900/10 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+                      <div className="flex items-start gap-4">
+                        <div className="mt-1 w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-green-500/20">
+                          <MessageSquareWarning className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-bold uppercase tracking-widest text-green-700 dark:text-green-400">
+                              Support Team Response
+                            </p>
+                            <span className="text-[10px] text-green-600 dark:text-green-500 font-medium bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
+                              Official
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap italic">
+                            "{myReclamation.reply}"
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 p-4 rounded-lg border border-dashed border-amber-200 dark:border-amber-900/40 bg-amber-50/30 dark:bg-amber-900/10 flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
+                      <p className="text-sm text-amber-700 dark:text-amber-400 italic">
+                        Your request has been received and is waiting for a support response.
+                      </p>
+                    </div>
+                  )
                 ) : null}
               </div>
             )}

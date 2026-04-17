@@ -201,9 +201,9 @@ export default function Login() {
           <div className="bg-gradient-to-br from-[#FF6B35] to-[#00D4FF] rounded-3xl p-12 text-white">
             <div className="flex items-center space-x-2 mb-8">
               <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-[#FF6B35] text-2xl">E</span>
+                <span className="text-[#FF6B35] text-2xl">Vh</span>
               </div>
-              <span className="text-2xl">EventShop</span>
+              <span className="text-2xl">VendHub</span>
             </div>
             <h2 className="text-4xl mb-4">Welcome Back!</h2>
             <p className="text-xl text-white/90 mb-8">

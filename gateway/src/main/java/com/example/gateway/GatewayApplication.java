@@ -25,10 +25,10 @@ public class GatewayApplication {
 				.route("microservice3",
 						r -> r.path("/api/events/**", "/api/events")
 								.uri("lb://microservice3"))
-				.route("microservice4",
+				.route("reclamation_route",
 						r -> r.path("/api/reclamations/**", "/api/reclamations")
 								.uri("lb://microservice4"))
-				.route("microservice4",
+				.route("feedback_route",
 						r -> r.path("/api/feedbacks/**", "/api/feedbacks")
 								.uri("lb://microservice4"))
 				.route("microservice5",

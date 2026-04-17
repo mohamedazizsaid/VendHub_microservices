@@ -14,14 +14,14 @@ export function About() {
       id: 1,
       name: "Alice Johnson",
       role: "Founder & CEO",
-      bio: "Alice is a visionary entrepreneur with a passion for e-commerce and event management. With over 15 years of experience in the industry, she founded EventShop to create a seamless shopping and event experience for customers worldwide.",
+      bio: "Alice is a visionary entrepreneur with a passion for e-commerce and event management. With over 15 years of experience in the industry, she founded VendHub to create a seamless shopping and event experience for customers worldwide.",
       image: "https://randomuser.me/api/portraits/women/44.jpg",
     },
     {
       id: 2,
       name: "Bob Smith",
       role: "Chief Technology Officer",
-      bio: "Bob is a tech enthusiast and software architect with a background in building scalable e-commerce platforms. He leads the development team at EventShop, ensuring that our technology is cutting-edge and reliable.",
+      bio: "Bob is a tech enthusiast and software architect with a background in building scalable e-commerce platforms. He leads the development team at VendHub, ensuring that our technology is cutting-edge and reliable.",
       image: "https://randomuser.me/api/portraits/men/32.jpg",
     },
   ];
@@ -31,7 +31,7 @@ export function About() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-[#2C3E50] to-[#1A1A2E] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <h1 className="text-4xl md:text-6xl mb-6">About EventShop</h1>
+          <h1 className="text-4xl md:text-6xl mb-6">About VendHub</h1>
           <p className="text-xl text-white/90 max-w-3xl mx-auto">
             We're on a mission to revolutionize online shopping and event experiences by bringing everything you need into one seamless platform.
           </p>
@@ -63,7 +63,7 @@ export function About() {
             <h2 className="text-3xl md:text-4xl text-gray-900 dark:text-white mb-6">Our Story</h2>
             <div className="space-y-4 text-gray-600 dark:text-gray-400">
               <p>
-                Founded in 2016, EventShop began with a simple vision: to create a platform that seamlessly combines the convenience of online shopping with the excitement of live events.
+                Founded in 2016, VendHub began with a simple vision: to create a platform that seamlessly combines the convenience of online shopping with the excitement of live events.
               </p>
               <p>
                 What started as a small startup has grown into a thriving community of over 50,000 customers who trust us for their shopping and entertainment needs. We've sold over 500,000 products and hosted more than 1,000 unforgettable events.
@@ -135,7 +135,7 @@ export function About() {
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl text-gray-900 dark:text-white mb-4">Meet Our Team</h2>
           <p className="text-gray-600 dark:text-gray-400">
-            The passionate people behind EventShop
+            The passionate people behind VendHub
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -161,11 +161,11 @@ export function About() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl text-gray-900 dark:text-white mb-4">Our Journey</h2>
-            <p className="text-gray-600 dark:text-gray-400">Key milestones that shaped EventShop</p>
+            <p className="text-gray-600 dark:text-gray-400">Key milestones that shaped VendHub</p>
           </div>
           <div className="space-y-8">
             {[
-              { year: "2016", title: "Company Founded", description: "EventShop was born with a vision to revolutionize online commerce" },
+              { year: "2016", title: "Company Founded", description: "VendHub was born with a vision to revolutionize online commerce" },
               { year: "2018", title: "10,000 Customers", description: "Reached our first major milestone with a growing community" },
               { year: "2020", title: "Events Platform Launch", description: "Expanded into event management and ticket sales" },
               { year: "2022", title: "100,000 Products", description: "Catalog grew exponentially with diverse product categories" },

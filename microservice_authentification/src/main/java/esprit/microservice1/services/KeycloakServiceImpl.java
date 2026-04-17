@@ -134,8 +134,10 @@ public class KeycloakServiceImpl implements KeycloakService {
     public LoginResponse login(String usernameOrEmail, String password, String totp, String captchaToken) {
         System.out.println(">>> Attempting login for: " + usernameOrEmail);
 
-        // Check CAPTCHA
-        verifyCaptcha(captchaToken);
+        // Check CAPTCHA only on initial login attempt (without TOTP)
+        if (totp == null || totp.isEmpty()) {
+            verifyCaptcha(captchaToken);
+        }
 
         try {
             // 1. Chercher l'utilisateur par username OU par email dans la DB locale
@@ -699,6 +701,18 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     @Override
     public User getUser(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new RuntimeException("User ID is required");
+        }
+
+        // Si l'ID est numérique, on cherche par ID local (utilisé par les autres microservices)
+        if (userId.matches("\\d+")) {
+            return userRepository.findById(Long.parseLong(userId))
+                    .orElseGet(() -> userRepository.findByIdKeycloak(userId)
+                            .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId)));
+        }
+
+        // Sinon on cherche par ID Keycloak
         return userRepository.findByIdKeycloak(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with Keycloak ID: " + userId));
     }

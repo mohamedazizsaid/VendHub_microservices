@@ -111,6 +111,7 @@ export const authService = {
             method: 'POST',
             body: JSON.stringify(request),
             suppressNoTokenWarning: true,
+            skipAuthRedirect: true,
         });
         localStorage.setItem('token', response.access_token);
         localStorage.setItem('refreshToken', response.refresh_token);

@@ -99,9 +99,9 @@ export function Navbar() {
             return (
               <Link to={homePath} className="flex items-center space-x-2">
                 <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B35] to-[#00D4FF] rounded-lg flex items-center justify-center">
-                  <span className="text-white text-xl">E</span>
+                  <span className="text-white text-xl">Vh</span>
                 </div>
-                <span className="text-xl text-[#2C3E50] dark:text-white">EventShop</span>
+                <span className="text-xl text-[#2C3E50] dark:text-white">VendHub</span>
               </Link>
             );
           })()}
@@ -170,7 +170,7 @@ export function Navbar() {
                       )}
                     </div>
                     <span className="hidden lg:block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {profile?.firstName || "My Account"}
+                      {profile?.username || "My Account"}
                     </span>
                   </Link>
                   <button

@@ -11,9 +11,9 @@ export function Footer() {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B35] to-[#00D4FF] rounded-lg flex items-center justify-center">
-                <span className="text-white text-xl">E</span>
+                <span className="text-white text-xl">Vh</span>
               </div>
-              <span className="text-xl">EventShop</span>
+              <span className="text-xl">VendHub</span>
             </div>
             <p className="text-gray-300 text-sm mb-4">
               Your ultimate destination for online shopping and event experiences. Quality products and memorable events, all in one place.
@@ -119,7 +119,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-white/10 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>© 2026 EventShop. All rights reserved.</p>
+          <p>© 2026 VendHub. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -38,24 +38,27 @@ public class ReclamationServiceImpl implements IReclamationService {
         // Vérifier que l'utilisateur existe via Eureka
         try {
             restTemplate.getForObject(
-                    "http://microservice1-users/api/users/" + reclamation.getUserId(),
+                    "http://microservice1/api/auth/users/" + reclamation.getUserId(),
                     Object.class);
             log.info("User with id {} exists", reclamation.getUserId());
         } catch (Exception e) {
-            log.error("User not found with id: {}", reclamation.getUserId());
-            throw new RuntimeException("User not found with id: " + reclamation.getUserId());
+            log.error("User validation failed for id {}: {}", reclamation.getUserId(), e.getMessage());
+            throw new RuntimeException("Validation utilisateur échouée: " + e.getMessage());
         }
 
-        // Vérifier que le produit existe via Eureka
+        // Vérifier que la commande existe via le microservice Commande
         try {
-            // Vérifier que la commande existe via le microservice Commande
             restTemplate.getForObject(
-                    "http://microservice_commande/api/commandes/" + reclamation.getCommandeId(),
+                    "http://microservice6/api6/commandes/" + reclamation.getCommandeId(),
                     Object.class);
             log.info("Commande with id {} exists", reclamation.getCommandeId());
         } catch (Exception e) {
-            log.error("Commande not found with id: {}", reclamation.getCommandeId());
-            throw new RuntimeException("Commande not found with id: " + reclamation.getCommandeId());
+            log.error("Commande validation failed for id {}: {}", reclamation.getCommandeId(), e.getMessage());
+            throw new RuntimeException("Validation commande échouée: " + e.getMessage());
+        }
+
+        if (reclamation.getStatus() == null) {
+            reclamation.setStatus("OPEN");
         }
 
         Reclamation saved = reclamationRepository.save(reclamation);
@@ -100,6 +103,9 @@ public class ReclamationServiceImpl implements IReclamationService {
         }
         if (reclamation.getDescription() != null) {
             existing.setDescription(reclamation.getDescription());
+        }
+        if (reclamation.getReply() != null) {
+            existing.setReply(reclamation.getReply());
         }
         if (reclamation.getStatus() != null) {
             existing.setStatus(reclamation.getStatus());
@@ -162,7 +168,7 @@ public class ReclamationServiceImpl implements IReclamationService {
         try {
             mailSender.send(message);
             log.info("Notification email sent to {} for reclamation {}", userEmail, reclamation.getId());
-        } catch (MailException e) {
+        } catch (Exception e) {
             log.error("Failed to send notification email for reclamation {}: {}",
                     reclamation.getId(), e.getMessage());
         }
@@ -175,7 +181,6 @@ public class ReclamationServiceImpl implements IReclamationService {
 
         List<String> candidates = List.of(
                 userServiceUrl + "/" + userId,
-                "http://microservice1-users/api/users/" + userId,
                 "http://microservice1/api/auth/users/" + userId);
 
         for (String url : candidates) {

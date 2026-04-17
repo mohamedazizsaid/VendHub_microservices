@@ -17,7 +17,7 @@ export function Home() {
       id: 1,
       name: "Emily R.",
       role: "Verified Buyer",
-      text: "EventShop has completely transformed the way I shop and attend events. The personalized recommendations are spot on, and the seamless checkout process makes everything so easy!",
+      text: "VendHub has completely transformed the way I shop and attend events. The personalized recommendations are spot on, and the seamless checkout process makes everything so easy!",
       image: "https://randomuser.me/api/portraits/women/68.jpg",
       rating: 5,
     },];

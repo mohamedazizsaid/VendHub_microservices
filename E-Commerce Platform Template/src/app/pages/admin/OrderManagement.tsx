@@ -39,6 +39,8 @@ export function OrderManagement() {
   const [selectedOrderForReclamations, setSelectedOrderForReclamations] = useState<Commande | null>(null);
   const [reclamations, setReclamations] = useState<Reclamation[]>([]);
   const [isReclamationsLoading, setIsReclamationsLoading] = useState(false);
+  const [reclamationReplies, setReclamationReplies] = useState<{ [key: number]: string }>({});
+  const [isReplying, setIsReplying] = useState<number | null>(null);
 
   const PAGE_SIZE = 8;
 
@@ -202,6 +204,33 @@ export function OrderManagement() {
       setReclamations([]);
     } finally {
       setIsReclamationsLoading(false);
+    }
+  };
+
+  const handleSendReply = async (reclamationId: number) => {
+    const replyText = (reclamationReplies[reclamationId] || "").trim();
+    if (!replyText) {
+      toast.error("Please enter a reply");
+      return;
+    }
+
+    try {
+      setIsReplying(reclamationId);
+      const updated = await reclamationService.updateReclamation(reclamationId, {
+        reply: replyText,
+        status: "RESOLVED"
+      });
+
+      setReclamations(prev => prev.map(rec =>
+        rec.id === reclamationId ? { ...rec, ...updated } : rec
+      ));
+
+      setReclamationReplies(prev => ({ ...prev, [reclamationId]: "" }));
+      toast.success("Reply sent successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send reply");
+    } finally {
+      setIsReplying(null);
     }
   };
 
@@ -509,7 +538,37 @@ export function OrderManagement() {
                       <p className="text-xs uppercase text-gray-500 dark:text-gray-400 mb-1">Support Reply</p>
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{reclamation.reply}</p>
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      <textarea
+                        value={reclamationReplies[reclamation.id!] || ""}
+                        onChange={(e) => setReclamationReplies(prev => ({
+                          ...prev,
+                          [reclamation.id!]: e.target.value
+                        }))}
+                        placeholder="Type your support response here..."
+                        className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#16213E] text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        rows={3}
+                      />
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          className="bg-[#FF6B35] hover:bg-[#e85a24] text-white"
+                          disabled={isReplying === reclamation.id || !(reclamationReplies[reclamation.id!] || "").trim()}
+                          onClick={() => reclamation.id && handleSendReply(reclamation.id)}
+                        >
+                          {isReplying === reclamation.id ? (
+                            <>
+                              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            "Send Support Reply"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

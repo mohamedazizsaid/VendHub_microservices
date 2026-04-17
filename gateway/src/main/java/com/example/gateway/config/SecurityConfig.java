@@ -39,6 +39,10 @@ public class SecurityConfig {
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .pathMatchers("/actuator/**").permitAll()
+                        // Swagger UI & OpenAPI docs - accessible without authentication
+                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/webjars/**").permitAll()
+                        .pathMatchers("/v3/api-docs/**", "/v3/api-docs").permitAll()
+                        // Microservice API routes
                         .pathMatchers("/api/auth/**").permitAll()
                         .pathMatchers("/api/messages/**").permitAll()
                         .pathMatchers("/api/forums/**").permitAll()

@@ -79,7 +79,7 @@ export function EventsList() {
     <div className="min-h-screen bg-gray-50 dark:bg-[#16213E]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 rounded-2xl bg-gradient-to-r from-[#0f172a] via-[#1e293b] to-[#334155] p-6 text-white">
-          <h1 className="text-3xl text-gray-900 dark:text-white mb-4">Upcoming Events</h1>
+          <h1 className="text-3xl text-white-900 dark:text-white mb-4">Upcoming Events</h1>
           <p className="text-white/80 mb-4">Discover experiences curated from live event data.</p>
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">

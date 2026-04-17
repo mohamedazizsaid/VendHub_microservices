@@ -21,12 +21,12 @@ public class ReclamationController {
     }
 
     @PostMapping
-    public ResponseEntity<Reclamation> createReclamation(@RequestBody Reclamation reclamation) {
+    public ResponseEntity<?> createReclamation(@RequestBody Reclamation reclamation) {
         try {
             Reclamation created = reclamationService.createReclamation(reclamation);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 

@@ -222,7 +222,7 @@ export function SignUp() {
         {/* Right Side - Branding */}
         <div className="hidden md:block">
           <div className="bg-gradient-to-br from-[#00D4FF] to-[#FF6B35] rounded-3xl p-12 text-white">
-            <h2 className="text-4xl mb-4">Join EventShop Today!</h2>
+            <h2 className="text-4xl mb-4">Join VendHub Today!</h2>
             <p className="text-xl text-white/90 mb-8">
               Create an account and unlock access to exclusive products, events, and member benefits.
             </p>

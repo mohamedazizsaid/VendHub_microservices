@@ -37,7 +37,7 @@ export function Contact() {
             <CardContent className="text-center">
               <Mail className="w-8 h-8 mx-auto mb-3 text-[#FF6B35]" />
               <h3 className="text-sm text-gray-900 dark:text-white mb-1">Email Us</h3>
-              <p className="text-xs text-gray-600 dark:text-gray-400">support@eventshop.com</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">support@VendHub.com</p>
             </CardContent>
           </Card>
           <Card>
