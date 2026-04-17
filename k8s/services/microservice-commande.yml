@@ -17,6 +17,13 @@ spec:
           # Temporary update on branch hamzadl to validate commit workflow.
           image: mohamedazizsaid/microservice_Commande:latest
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
           env:
             - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
               value: http://eureka:8761/eureka
