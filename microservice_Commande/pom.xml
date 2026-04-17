@@ -11,8 +11,8 @@
 	<groupId>esprit</groupId>
 	<artifactId>microservice2</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>microservice2</name>
-	<description>microservice2</description>
+	<name>microservice-commande</name>
+	<description>Commande microservice for order management domain</description>
 	<url/>
 	<licenses>
 		<license/>
