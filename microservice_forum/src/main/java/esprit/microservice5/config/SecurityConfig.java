@@ -17,6 +17,13 @@ public class SecurityConfig {
                                 .csrf(csrf -> csrf.disable()) // Disable CSRF for REST APIs
                                 .cors(cors -> cors.disable()) // Let Gateway handle CORS
                                 .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(
+                                                                "/v3/api-docs/**",
+                                                                "/v3/api-docs",
+                                                                "/swagger-ui.html",
+                                                                "/swagger-ui/**",
+                                                                "/webjars/**")
+                                                .permitAll()
                                                 .requestMatchers("/api/**").permitAll() // Allow all requests to /api/**
                                                 .anyRequest().authenticated() // Require authentication for other
                                                                               // requests
